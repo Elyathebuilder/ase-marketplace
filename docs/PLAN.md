@@ -1,6 +1,16 @@
 # ASE implementation plan
 
-## What exists (Phase 1)
+## Where we stopped (8 November 2026)
+
+Latest work: Georgian became the default language, delivery now depends on the customer's city, and the cart groups orders by manufacturer. Everything is pushed to `main`, and 32 tests pass.
+
+**Next session, in this order:**
+1. Owner reviews the updated preview (Georgian default, delivery estimate, cart, seller portal).
+2. Native Georgian speaker reviews `src/i18n/ka.ts` and `src/i18n/data-ka.ts`.
+3. Start Phase 2: accounts and roles (Supabase), database schema. The admin delivery page gets admin-only access here.
+4. Answer the open decisions below, especially map service and delivery rates.
+
+## What exists
 
 | Area | Status |
 |---|---|
@@ -12,9 +22,15 @@
 | Manufacturer directory and profiles with verification status | Done |
 | B2B page with RFQ form (validated, **not sent** yet) | Done (UI only) |
 | Delivery engine: smallest suitable vehicle, utilization, pricing, manual-quote fallback, per-manufacturer shipments, 22 unit tests | Done (module) |
+| Delivery estimate depends on the customer's city (approximate city-to-city distance); customers see only "Estimated delivery: X ₾" | Done |
+| Internal delivery calculator with full breakdown and rate table at `/admin/delivery` | Done (no access control yet) |
+| Cart (kept in the browser): one shipment per manufacturer, combined delivery total; checkout switched off | Done (preview) |
+| Languages: Georgian default at plain URLs, English under `/en`, "ქართული \| English" switcher; all UI and demo catalog translated | Done (needs native review) |
+| Seller portal preview: dashboard, orders, quotations, products, finances, company profile (demo data, nothing saved) | Done (UI only) |
 | Responsive: phone, tablet, desktop | Done |
 
-Buttons that need later phases are visibly switched off or labelled as preview (Add to cart, RFQ send).
+Buttons that need later phases are visibly switched off or labelled as preview (checkout, RFQ send, seller portal saves).
+Rental features: none exist in ASE (they belong to the separate amartani-properties project).
 
 ## Architecture
 
@@ -38,13 +54,14 @@ Buttons that need later phases are visibly switched off or labelled as preview (
 
 | # | Decision | Needed by | Notes |
 |---|---|---|---|
-| 1 | Where the code lives: GitHub repository for ASE | Now | Gives history, backups and Vercel deploys |
-| 2 | Map / distance service (Google Maps, Mapbox, or other) | Phase 5 | Measures road distance pickup → customer |
+| 1 | ~~Where the code lives~~ | Decided | github.com/Elyathebuilder/ase-marketplace |
+| 2 | Map / distance service (Google Maps, Mapbox, or other) | Phase 5 | Today distance is approximate (straight line × 1.3 between city centres). A map service gives real road distance to the exact address |
 | 3 | Payment provider for marketplace split payments (e.g. a Georgian bank's marketplace product) | Phase 8 | No money is held by ASE itself until this is settled legally |
-| 4 | Commission % (one rate, or per category) | Phase 7 | |
+| 4 | Commission % (one rate, or per category) | Phase 7 | The seller portal shows 10% only as an example |
+| 4b | Delivery rates: confirm Scooter 0/0.60/5, Car 0/0.60/10, Van 20/1.50/20, Truck 50/2.50/40 (base / per km / space fee) and vehicle sizes; minimum charge? | Phase 6 | Long trips are expensive for small items (one paint bucket Tbilisi → Batumi ≈ 212 ₾) |
 | 5 | Delivery time options: "as soon as possible" vs set day and time window. Does a set time cost extra? | Phase 5 | From the interaction-logic document |
 | 6 | Who delivers: ASE's own couriers or partner transport companies | Phase 5 | Affects vehicle capacities and rates |
-| 7 | Languages: English + Georgian at launch? Russian? | Before launch | Fonts for Georgian already loaded |
+| 7 | Georgian text review by a native speaker; add Russian later? | Before launch | Georgian is the default; English is second |
 | 8 | Brand name and logo | Before launch | "ASE" with a red cross mark is a placeholder |
 
 ## Notes on the interaction-logic document

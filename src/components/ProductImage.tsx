@@ -13,7 +13,7 @@ const TONES = [
   ["#eeeae5", "#d7cfc5"], ["#f2ebe6", "#dccfc6"],
 ];
 
-export function ProductImage({ product, size = "md", className = "" }: { product: Product; size?: "sm" | "md" | "lg"; className?: string }) {
+export function ProductImage({ product, size = "md", className = "", sampleLabel = "sample image" }: { product: Product; size?: "sm" | "md" | "lg"; className?: string; sampleLabel?: string }) {
   const [a, b] = TONES[product.tone % TONES.length];
   const icon = getCategory(product.category)?.icon ?? "boxes";
   const iconSize = size === "lg" ? "h-24 w-24" : size === "sm" ? "h-8 w-8" : "h-14 w-14";
@@ -22,7 +22,7 @@ export function ProductImage({ product, size = "md", className = "" }: { product
       className={`relative flex items-center justify-center overflow-hidden ${className}`}
       style={{ background: `radial-gradient(120% 90% at 30% 20%, ${a} 0%, ${b} 100%)` }}
       role="img"
-      aria-label={`${product.name} (sample image)`}
+      aria-label={`${product.name} (${sampleLabel})`}
     >
       <svg className="absolute inset-0 h-full w-full opacity-[0.07]" aria-hidden="true">
         <defs>

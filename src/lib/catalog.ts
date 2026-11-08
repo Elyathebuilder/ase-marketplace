@@ -3,6 +3,7 @@
  * functions will query Supabase, so pages don't need to change.
  */
 import { CATEGORIES, MANUFACTURERS, PRODUCTS } from "./demo-data";
+import { categoryName, makerSearchText, searchText } from "@/i18n";
 import type { Availability, Category, Manufacturer, Product } from "./types";
 
 export const getCategories = (): Category[] => CATEGORIES;
@@ -125,7 +126,8 @@ export function filterProducts(f: CatalogFilters): Product[] {
   const list = PRODUCTS.filter((p) => {
     const m = manufacturerOf(p);
     if (q) {
-      const hay = [p.name, p.description, m.name, m.city, ...p.materials, ...p.tags, getCategory(p.category)?.name ?? ""]
+      // Both languages are searched, so "მუხა" and "oak" find the same table.
+      const hay = [searchText(p), makerSearchText(m), getCategory(p.category)?.name ?? "", categoryName(p.category, "", "ka")]
         .join(" ")
         .toLowerCase();
       if (!q.split(/\s+/).every((word) => hay.includes(word))) return false;

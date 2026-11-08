@@ -6,6 +6,7 @@
 import { getManufacturer, getProduct, productsBy } from "./catalog";
 import { DEFAULT_DELIVERY_SETTINGS, quoteShipment } from "./delivery";
 import { approxRoadKm } from "./places";
+import { locProduct, type Lang } from "@/i18n";
 
 export const DEMO_SELLER_SLUG = "imereti-timber-works";
 export const demoSeller = () => getManufacturer(DEMO_SELLER_SLUG)!;
@@ -168,6 +169,16 @@ const QUOTES: DemoQuote[] = [
 ];
 
 export const demoQuotes = () => QUOTES;
+
+/** Georgian titles for custom (unlisted) requests in the demo. */
+const QUOTE_TITLES_KA: Record<string, string> = { "Q-2228": "სადეგუსტაციო მაგიდები შეკვეთით", "Q-2190": "შეხვედრების მაგიდები" };
+
+/** Request title in the chosen language: the listed product's name, or the buyer's own title. */
+export function quoteTitle(q: DemoQuote, lang: Lang): string {
+  const p = q.product ? getProduct(q.product) : undefined;
+  if (p) return locProduct(p, lang).name;
+  return lang === "ka" ? QUOTE_TITLES_KA[q.id] ?? q.title : q.title;
+}
 export const demoQuote = (id: string) => QUOTES.find((q) => q.id === id);
 
 export const DEMO_PAYOUTS = [

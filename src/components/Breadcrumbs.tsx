@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
-export function Breadcrumbs({ items }: { items: { label: string; href?: string }[] }) {
+export function Breadcrumbs({ items, label = "Breadcrumb" }: { items: { label: string; href?: string }[]; label?: string }) {
   return (
-    <nav aria-label="Breadcrumb" className="text-xs text-muted">
+    <nav aria-label={label} className="text-xs text-muted">
       <ol className="flex flex-wrap items-center gap-1">
         {items.map((item, i) => (
           <li key={item.label} className="flex items-center gap-1">

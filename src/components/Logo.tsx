@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { href, type Lang } from "@/i18n";
 
 /** ASE wordmark with a small red cross mark (a nod to the Georgian flag). */
-export function Logo({ inverted = false }: { inverted?: boolean }) {
+export function Logo({ inverted = false, lang, to = "/" }: { inverted?: boolean; lang: Lang; to?: string }) {
   return (
-    <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="ASE home">
+    <Link href={href(lang, to)} className="flex items-center gap-2 shrink-0" aria-label="ASE">
       <svg viewBox="0 0 32 32" className="h-8 w-8" aria-hidden="true">
         <rect width="32" height="32" rx="7" className={inverted ? "fill-white" : "fill-ink"} />
         <rect x="13.5" y="5" width="5" height="22" rx="1" className="fill-red-600" />

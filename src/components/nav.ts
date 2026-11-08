@@ -1,8 +1,8 @@
 export const NAV = [
-  { href: "/", label: "Home" },
-  { href: "/products", label: "Products" },
-  { href: "/categories", label: "Categories" },
-  { href: "/manufacturers", label: "Manufacturers" },
-  { href: "/b2b", label: "B2B / Wholesale" },
-  { href: "/about", label: "About Us" },
+  { path: "/", key: "home" },
+  { path: "/products", key: "products" },
+  { path: "/categories", key: "categories" },
+  { path: "/manufacturers", key: "manufacturers" },
+  { path: "/b2b", key: "b2b" },
+  { path: "/about", key: "about" },
 ] as const;

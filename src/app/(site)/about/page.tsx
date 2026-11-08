@@ -46,6 +46,7 @@ export default function AboutPage() {
             List your products for retail and wholesale, receive orders and quotation requests, and get paid after dispatch, minus a platform commission. Seller accounts open in the next phase.
           </p>
           <p className="mt-3 text-sm text-white/60">Want to be among the first sellers? Write to hello@ase.demo.</p>
+          <Link href="/seller" className="btn mt-5 bg-white text-ink hover:bg-paper">See the seller portal (preview)</Link>
         </div>
         <ul className="grid gap-3 sm:grid-cols-2">
           {[

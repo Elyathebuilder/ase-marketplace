@@ -1,7 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { DemoNotice } from "@/components/DemoNotice";
-import { SiteFooter } from "@/components/SiteFooter";
-import { SiteHeader } from "@/components/SiteHeader";
 import { fontVariables } from "./fonts";
 import "./globals.css";
 
@@ -18,10 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={fontVariables}>
       <body className="flex min-h-dvh flex-col">
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 btn btn-dark">Skip to content</a>
-        <DemoNotice />
-        <SiteHeader />
-        <main id="main" className="flex-1">{children}</main>
-        <SiteFooter />
+        {children}
       </body>
     </html>
   );

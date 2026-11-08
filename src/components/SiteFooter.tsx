@@ -26,6 +26,7 @@ export function SiteFooter() {
           <FooterLink href="/b2b#rfq">Request a quotation</FooterLink>
           <FooterLink href="/manufacturers">Manufacturer directory</FooterLink>
           <FooterLink href="/about#sell">Sell on ASE</FooterLink>
+          <FooterLink href="/seller">Seller portal (preview)</FooterLink>
           <FooterLink href="/about#verification">How we verify manufacturers</FooterLink>
         </FooterCol>
         <FooterCol title="Company">

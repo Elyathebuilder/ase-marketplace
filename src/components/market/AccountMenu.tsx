@@ -35,7 +35,7 @@ export function AccountMenu() {
       </Link>
     );
 
-  const home = me.user.role === "customer" ? "/account/orders" : me.user.role === "manufacturer" ? "/seller/orders" : "/admin";
+  const home = me.user.role === "customer" ? "/account" : me.user.role === "manufacturer" ? "/seller/orders" : "/admin";
   const homeLabel = me.user.role === "customer" ? a.myOrders : me.user.role === "manufacturer" ? a.sellerPortal : a.admin;
   return (
     <div className="flex items-center" data-island="account">

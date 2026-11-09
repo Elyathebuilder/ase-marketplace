@@ -5,9 +5,9 @@ import { useState } from "react";
 import { Info, MapPin, Minus, Plus, ShoppingCart, Trash2, Truck } from "lucide-react";
 import { href, locMaker, locProduct, place } from "@/i18n";
 import { useI18n } from "@/i18n/client";
-import { removeFromCart, setQty, useCart } from "@/lib/cart";
+import { lineKey, removeFromCart, setQty, useCart } from "@/lib/cart";
+import { useCartCatalog } from "@/lib/cart-catalog";
 import { quoteCartDelivery } from "@/lib/cart-delivery";
-import { getManufacturer } from "@/lib/catalog";
 import { formatGel } from "@/lib/format";
 import { PLACES } from "@/lib/places";
 import { ProductImage } from "../ProductImage";
@@ -22,7 +22,15 @@ export function CartView() {
   const c = t.cart;
   const lines = useCart();
   const [to, setTo] = useState("Tbilisi");
-  const quote = quoteCartDelivery(lines, to);
+  const { lookup, loading } = useCartCatalog(lines.map((l) => l.slug));
+  const quote = quoteCartDelivery(lines, to, lookup);
+
+  if (loading)
+    return (
+      <div className="card flex items-center justify-center px-6 py-16 text-sm text-muted" data-island="cart" aria-busy="true">
+        {t.common.loading}
+      </div>
+    );
 
   if (quote.groups.length === 0)
     return (
@@ -40,7 +48,7 @@ export function CartView() {
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]" data-island="cart">
       <div className="space-y-4">
         {quote.groups.map((g) => {
-          const m = locMaker(getManufacturer(g.manufacturer)!, lang);
+          const m = locMaker(lookup.maker(g.manufacturer)!, lang);
           const s = shipmentFor(g.manufacturer);
           return (
             <section key={g.manufacturer} className="card overflow-hidden" data-shipment={g.manufacturer}>
@@ -49,26 +57,32 @@ export function CartView() {
                 {c.shipmentFrom(m.name, m.city)}
               </h2>
               <ul className="divide-y divide-line">
-                {g.lines.map(({ product: raw, qty, lineTotal }) => {
+                {g.lines.map(({ product: raw, qty, lineTotal, unitPrice, pricing, options }) => {
                   const p = locProduct(raw, lang);
+                  const key = lineKey({ slug: p.slug, options });
+                  const chosen = Object.entries(options);
                   return (
-                    <li key={p.slug} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                    <li key={key} className="flex flex-wrap items-center gap-3 px-4 py-3">
                       <ProductImage product={p} size="sm" className="h-14 w-14 shrink-0 rounded-lg" sampleLabel={t.common.sampleImage} />
                       <div className="min-w-0 flex-1">
                         <Link href={href(lang, `/products/${p.slug}`)} className="font-semibold text-ink hover:text-red-600 hover:underline">{p.name}</Link>
-                        <p className="text-xs text-muted">{formatGel(raw.retailPrice!)} {t.common.perUnit(p.unit)}</p>
+                        {chosen.length > 0 && <p className="text-xs text-ink-2">{chosen.map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>}
+                        <p className="text-xs text-muted">
+                          {formatGel(unitPrice)} {t.common.perUnit(p.unit)}
+                          {pricing === "wholesale" && <span className="ml-1 font-semibold text-ok">{t.cart.quantityPrice}</span>}
+                        </p>
                       </div>
                       <div className="inline-flex items-center rounded-full border border-line-strong bg-surface" role="group" aria-label={c.qty}>
-                        <button type="button" aria-label={t.purchase.decrease} className="p-2 text-ink disabled:opacity-40" disabled={qty <= 1} onClick={() => setQty(p.slug, qty - 1)}>
+                        <button type="button" aria-label={t.purchase.decrease} className="p-2 text-ink disabled:opacity-40" disabled={qty <= 1} onClick={() => setQty(key, qty - 1)}>
                           <Minus className="h-3.5 w-3.5" />
                         </button>
                         <span className="w-8 text-center text-sm font-semibold tabular-nums" aria-live="polite">{qty}</span>
-                        <button type="button" aria-label={t.purchase.increase} className="p-2 text-ink" onClick={() => setQty(p.slug, qty + 1)}>
+                        <button type="button" aria-label={t.purchase.increase} className="p-2 text-ink" onClick={() => setQty(key, qty + 1)}>
                           <Plus className="h-3.5 w-3.5" />
                         </button>
                       </div>
                       <span className="w-24 text-right font-semibold tabular-nums text-ink">{formatGel(lineTotal)}</span>
-                      <button type="button" className="btn btn-ghost p-2 text-muted hover:text-red-700" aria-label={`${c.remove}: ${p.name}`} onClick={() => removeFromCart(p.slug)}>
+                      <button type="button" className="btn btn-ghost p-2 text-muted hover:text-red-700" aria-label={`${c.remove}: ${p.name}`} onClick={() => removeFromCart(key)}>
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </li>

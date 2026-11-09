@@ -3,7 +3,7 @@
  * The orders are created through the real workflow functions (not inserted by hand),
  * with a controlled clock, so their history and ledger are exactly what the app would record.
  */
-import { getManufacturers } from "../catalog";
+import { MANUFACTURERS } from "../demo-data";
 import { tx } from "./db";
 import {
   addNote,
@@ -34,18 +34,23 @@ export const DEMO_ADMIN: Actor = { id: "admin-tamar", role: "admin", name: "Tama
 export const makerUserId = (slug: string) => `maker-${slug}`;
 
 export function demoMakers(): Actor[] {
-  return getManufacturers().map((m) => ({ id: makerUserId(m.slug), role: "manufacturer", name: m.name, manufacturerSlug: m.slug }));
+  return MANUFACTURERS.map((m) => ({ id: makerUserId(m.slug), role: "manufacturer", name: m.name, manufacturerSlug: m.slug }));
 }
 
 export function seedUsers(ctx: Ctx) {
   const has = (ctx.db.prepare("SELECT COUNT(*) AS n FROM users").get() as { n: number }).n > 0;
   if (has) return;
   tx(ctx.db, () => {
-    const add = ctx.db.prepare("INSERT INTO users (id, role, name, email, manufacturer_slug) VALUES (?,?,?,?,?)");
-    for (const u of [...DEMO_CUSTOMERS, DEMO_ADMIN]) add.run(u.id, u.role, u.name, `${u.id}@demo.ase.ge`, null);
+    // Demo accounts have no password: they can only be used through the demo sign-in, which exists in TEST mode only.
+    const at = "2026-01-15T09:00:00.000Z";
+    const add = ctx.db.prepare(
+      "INSERT INTO users (id, role, name, first_name, last_name, email, manufacturer_slug, email_verified_at, created_at, is_demo) VALUES (?,?,?,?,?,?,?,?,?,1)",
+    );
+    const split = (name: string) => [name.split(" ")[0], name.split(" ").slice(1).join(" ") || null];
+    for (const u of [...DEMO_CUSTOMERS, DEMO_ADMIN]) add.run(u.id, u.role, u.name, ...split(u.name), `${u.id}@demo.ase.ge`, null, at, at);
     const bank = ctx.db.prepare("INSERT INTO manufacturer_bank_accounts (manufacturer_slug, account_holder, bank_name, iban) VALUES (?,?,?,?)");
-    getManufacturers().forEach((m, i) => {
-      add.run(makerUserId(m.slug), "manufacturer", m.name, `${m.slug}@demo.ase.ge`, m.slug);
+    MANUFACTURERS.forEach((m, i) => {
+      add.run(makerUserId(m.slug), "manufacturer", m.name, null, null, `${m.slug}@demo.ase.ge`, m.slug, at, at);
       bank.run(m.slug, `${m.name} LLC`, "Demo Bank", `GE${String(10 + i).padStart(2, "0")} DEMO 0000 0000 ${String(1000 + i * 37).padStart(4, "0")} 00`);
     });
   });

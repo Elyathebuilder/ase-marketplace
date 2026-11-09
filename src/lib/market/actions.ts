@@ -8,7 +8,9 @@
 import { redirect } from "next/navigation";
 import { href, isLang } from "@/i18n/config";
 import { toTetri } from "../money";
-import { currentActor, endSession, startSession, actorById } from "./auth";
+import { run, safeBack, str, withParam, errorCode } from "./action-kit";
+import { currentActor, endSession, startSession } from "./auth";
+import { isTestMode } from "./settings";
 import { markNotificationsRead } from "./queries";
 import { market } from "./server";
 import * as svc from "./service";
@@ -16,47 +18,13 @@ import { updateSettings } from "./settings";
 import { MarketError, type Actor } from "./types";
 import { saveUpload } from "./uploads";
 
-const str = (f: FormData, k: string) => {
-  const v = f.get(k);
-  return typeof v === "string" ? v : "";
-};
-
-/** Only same-site paths are allowed as a return address. */
-function safeBack(f: FormData, fallback = "/") {
-  const b = str(f, "back");
-  return b.startsWith("/") && !b.startsWith("//") && !b.includes("\\") ? b : fallback;
-}
-
-function withParam(path: string, k: string, v: string) {
-  const [base, hash] = path.split("#");
-  const clean = base.replace(new RegExp(`([?&])(ok|error)=[^&]*&?`, "g"), "$1").replace(/[?&]$/, "");
-  return `${clean}${clean.includes("?") ? "&" : "?"}${k}=${encodeURIComponent(v)}${hash ? `#${hash}` : ""}`;
-}
-
-function errorCode(e: unknown): string {
-  if (e instanceof MarketError) return e.message.includes("file") ? "file" : e.code;
-  console.error(e);
-  return "invalid_input";
-}
-
-/** Runs one action, then goes to "next" (or back with ?ok=1); on failure back with ?error=<code>. */
-async function run(f: FormData, fn: (actor: Actor | null) => void | Promise<void>) {
-  const back = safeBack(f);
-  const next = str(f, "next");
-  let target: string;
-  try {
-    await fn(await currentActor());
-    target = next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : withParam(back, "ok", "1");
-  } catch (e) {
-    target = withParam(back, "error", errorCode(e));
-  }
-  redirect(target);
-}
-
 /* ---------------- Sign in ---------------- */
 
+/** Demo sign-in: TEST mode only, and only for the seeded demo accounts (which have no password). */
 export async function signInAs(f: FormData) {
-  const user = actorById(str(f, "user"));
+  const user = isTestMode()
+    ? (market().db.prepare("SELECT id, role FROM users WHERE id = ? AND is_demo = 1 AND status = 'active'").get(str(f, "user")) as { id: string; role: Actor["role"] } | undefined)
+    : undefined;
   if (!user) redirect(safeBack(f));
   await startSession(user.id);
   const lang = isLang(str(f, "lang")) ? (str(f, "lang") as "ka" | "en") : "ka";
@@ -79,7 +47,12 @@ export async function placeOrderAction(f: FormData) {
   try {
     const parsed = JSON.parse(str(f, "lines") || "[]") as unknown;
     const lines = Array.isArray(parsed)
-      ? parsed.slice(0, 100).map((l) => ({ slug: String((l as { slug?: unknown }).slug ?? ""), qty: Number((l as { qty?: unknown }).qty) }))
+      ? parsed.slice(0, 100).map((l) => {
+          const o = (l as { options?: unknown }).options;
+          const options =
+            o && typeof o === "object" ? Object.fromEntries(Object.entries(o as Record<string, unknown>).filter(([, v]) => typeof v === "string").slice(0, 5)) as Record<string, string> : undefined;
+          return { slug: String((l as { slug?: unknown }).slug ?? ""), qty: Number((l as { qty?: unknown }).qty), options };
+        })
       : [];
     id = svc.placeOrder(market(), await currentActor(), {
       lines,

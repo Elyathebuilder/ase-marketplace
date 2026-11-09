@@ -5,6 +5,7 @@
 import path from "node:path";
 import { openDb } from "./db";
 import { seedOrders, seedUsers } from "./seed";
+import { seedCatalog } from "./seed-catalog";
 import type { Ctx } from "./service";
 
 const g = globalThis as unknown as { __aseMarket?: Ctx };
@@ -15,6 +16,7 @@ export function market(): Ctx {
     const file = process.env.ASE_DB_PATH || path.join(/* turbopackIgnore: true */ process.cwd(), "data", "ase.db");
     const ctx: Ctx = { db: openDb(file), now: () => new Date() };
     seedUsers(ctx);
+    seedCatalog(ctx);
     if (process.env.ASE_SEED_DEMO !== "0") seedOrders(ctx);
     g.__aseMarket = ctx;
   }
@@ -25,5 +27,6 @@ export function market(): Ctx {
 export function memoryMarket(now: () => Date = () => new Date(), testMode = false): Ctx {
   const ctx: Ctx = { db: openDb(":memory:"), now, testMode };
   seedUsers(ctx);
+  seedCatalog(ctx);
   return ctx;
 }

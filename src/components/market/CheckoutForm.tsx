@@ -7,8 +7,8 @@ import { Info, Landmark, Truck } from "lucide-react";
 import { href, locMaker, locProduct, place } from "@/i18n";
 import { useI18n } from "@/i18n/client";
 import { useCart } from "@/lib/cart";
+import { useCartCatalog } from "@/lib/cart-catalog";
 import { quoteCartDelivery } from "@/lib/cart-delivery";
-import { getManufacturer } from "@/lib/catalog";
 import { placeOrderAction } from "@/lib/market/actions";
 import { toTetri } from "@/lib/money";
 import { PLACES } from "@/lib/places";
@@ -31,7 +31,19 @@ export interface CheckoutDetails {
   city: string;
   address: string;
   note: string;
-  lines: { slug: string; qty: number }[];
+  lines: { slug: string; qty: number; options?: Record<string, string> }[];
+}
+
+/** A saved delivery address (from the customer's account). */
+export interface SavedAddress {
+  id: number;
+  label: string | null;
+  recipient: string;
+  phone: string;
+  city: string;
+  address: string;
+  note: string | null;
+  isDefault: boolean;
 }
 
 /**
@@ -46,19 +58,33 @@ export function CheckoutForm({
   defaultCity,
   testMode,
   onPlace,
+  addresses = [],
 }: {
   defaultName: string;
   defaultEmail?: string;
   defaultCity: string;
   testMode: boolean;
   onPlace?: (d: CheckoutDetails) => void;
+  addresses?: SavedAddress[];
 }) {
   const { lang, t } = useI18n();
   const c = t.market.checkout;
   const lines = useCart();
-  const [city, setCity] = useState(PLACES[defaultCity] ? defaultCity : "Tbilisi");
+  const preset = addresses.find((a) => a.isDefault) ?? addresses[0];
+  const [saved, setSaved] = useState<SavedAddress | undefined>(preset);
+  const [city, setCity] = useState(preset && PLACES[preset.city] ? preset.city : PLACES[defaultCity] ? defaultCity : "Tbilisi");
   const [busy, setBusy] = useState(false);
-  const quote = quoteCartDelivery(lines, city);
+  const { lookup, loading } = useCartCatalog(lines.map((l) => l.slug));
+  const quote = quoteCartDelivery(lines, city, lookup);
+  // Re-key the address fields when a saved address is picked, so they show its values.
+  const fill = saved ? `a${saved.id}` : "new";
+
+  if (loading)
+    return (
+      <div className="card p-8 text-center text-sm text-muted" aria-busy="true">
+        {t.common.loading}
+      </div>
+    );
 
   if (quote.groups.length === 0)
     return (
@@ -69,19 +95,22 @@ export function CheckoutForm({
     );
 
   const shipments: SummaryShipment[] = quote.groups.map((g) => {
-    const m = locMaker(getManufacturer(g.manufacturer)!, lang);
+    const m = locMaker(lookup.maker(g.manufacturer)!, lang);
     const s = quote.delivery.shipments.find((x) => x.originId === g.manufacturer);
     return {
       id: g.manufacturer,
       maker: m.name,
       city: m.city,
-      items: g.lines.map(({ product, qty }) => ({ key: product.slug, name: locProduct(product, lang).name, qty, line: toTetri(product.retailPrice!) * qty })),
+      items: g.lines.map(({ product, qty, unitPrice, options }) => {
+        const chosen = Object.values(options);
+        return { key: `${product.slug}|${chosen.join("|")}`, name: locProduct(product, lang).name + (chosen.length ? ` (${chosen.join(", ")})` : ""), qty, line: toTetri(unitPrice) * qty };
+      }),
       delivery: s?.status === "quoted" ? toTetri(s.price.total) : 0,
     };
   });
   const goods = shipments.reduce((s, x) => s + x.items.reduce((a, i) => a + i.line, 0), 0);
   const delivery = shipments.reduce((s, x) => s + x.delivery, 0);
-  const cartLines = lines.map((l) => ({ slug: l.slug, qty: l.qty }));
+  const cartLines = lines.map((l) => ({ slug: l.slug, qty: l.qty, ...(l.options ? { options: l.options } : {}) }));
 
   const onSubmit = onPlace
     ? (e: React.FormEvent<HTMLFormElement>) => {
@@ -104,11 +133,11 @@ export function CheckoutForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="label" htmlFor="co-name">{c.name}</label>
-              <input id="co-name" name="name" required maxLength={120} defaultValue={defaultName} autoComplete="name" className="input" />
+              <input key={`n-${fill}`} id="co-name" name="name" required maxLength={120} defaultValue={saved?.recipient ?? defaultName} autoComplete="name" className="input" />
             </div>
             <div>
               <label className="label" htmlFor="co-phone">{c.phone}</label>
-              <input id="co-phone" name="phone" required maxLength={40} type="tel" autoComplete="tel" className="input" placeholder="+995 5__ __ __ __" />
+              <input key={`p-${fill}`} id="co-phone" name="phone" required maxLength={40} type="tel" autoComplete="tel" defaultValue={saved?.phone ?? ""} className="input" placeholder="+995 5__ __ __ __" />
             </div>
             <div className="sm:col-span-2">
               <label className="label" htmlFor="co-email">{c.email}</label>
@@ -120,6 +149,26 @@ export function CheckoutForm({
         <section className="card space-y-4 p-4 md:p-5">
           <h2 className="flex items-center gap-2 text-base font-bold"><Truck className="h-4 w-4 text-red-600" aria-hidden="true" />{c.delivery}</h2>
           <p className="text-sm text-ink-2">{c.deliveryText}</p>
+          {addresses.length > 0 && (
+            <div>
+              <label className="label" htmlFor="co-saved">{c.savedAddress}</label>
+              <select
+                id="co-saved"
+                className="input"
+                value={saved ? String(saved.id) : ""}
+                onChange={(e) => {
+                  const a = addresses.find((x) => String(x.id) === e.target.value);
+                  setSaved(a);
+                  if (a && PLACES[a.city]) setCity(a.city);
+                }}
+              >
+                {addresses.map((a) => (
+                  <option key={a.id} value={a.id}>{[a.label, a.address, place(a.city, lang)].filter(Boolean).join(" · ")}</option>
+                ))}
+                <option value="">{c.newAddress}</option>
+              </select>
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="label" htmlFor="co-city">{c.city}</label>
@@ -131,7 +180,7 @@ export function CheckoutForm({
             </div>
             <div>
               <label className="label" htmlFor="co-address">{c.address}</label>
-              <input id="co-address" name="address" required maxLength={300} autoComplete="street-address" className="input" />
+              <input key={`a-${fill}`} id="co-address" name="address" required maxLength={300} autoComplete="street-address" defaultValue={saved?.address ?? ""} className="input" />
             </div>
           </div>
           <ul className="divide-y divide-line rounded-lg border border-line text-sm">
@@ -144,7 +193,7 @@ export function CheckoutForm({
           </ul>
           <div>
             <label className="label" htmlFor="co-note">{c.note}</label>
-            <textarea id="co-note" name="note" maxLength={500} rows={2} className="input" />
+            <textarea key={`o-${fill}`} id="co-note" name="note" maxLength={500} rows={2} defaultValue={saved?.note ?? ""} className="input" />
           </div>
         </section>
 

@@ -1,3 +1,4 @@
+import { accEn } from "./acc-en";
 import { marketEn } from "./market-en";
 
 /** English UI text. Georgian (ka.ts) has the same shape and is the default language. */
@@ -8,6 +9,7 @@ export const en = {
     sellerTitle: "Seller portal",
   },
   common: {
+    loading: "Loading…",
     home: "Home",
     skip: "Skip to content",
     seeAll: "See all",
@@ -76,10 +78,14 @@ export const en = {
   verification: {
     verified: "Verified manufacturer",
     verifiedShort: "Verified",
-    verifiedTitle: "Verified manufacturer: ASE checked that this company produces its own goods in Georgia",
-    pending: "Verification pending",
-    pendingShort: "Pending",
-    unverified: "Unverified",
+    verifiedTitle: "Verified manufacturer: in addition to seller approval, Amartani checked this manufacturer's information and inspected its production in person",
+    approved: "Approved seller",
+    approvedTitle: "Approved seller: Amartani approved this seller to sell on the marketplace. This is not a factory inspection.",
+    company: "Registered company",
+    independent: "Independent maker",
+    explainTitle: "Approved seller or Verified manufacturer?",
+    explainApproved: "Approved seller: approved to operate on the marketplace after we reviewed the application.",
+    explainVerified: "Verified manufacturer: has additionally gone through Amartani's manual verification, including information checks and a physical inspection appropriate to its size.",
   },
   availability: {
     in_stock: "In stock",
@@ -272,6 +278,7 @@ export const en = {
     handling_not_supported: "This order needs special handling. Our team will arrange transport and confirm the price.",
   },
   cart: {
+    quantityPrice: "quantity price",
     title: "Cart",
     empty: "Your cart is empty",
     emptyText: "Add products from any manufacturer. Each manufacturer ships from its own location.",
@@ -696,6 +703,7 @@ export const en = {
     vehicleNames: {} as Record<string, string>,
   },
   market: marketEn,
+  acc: accEn,
 };
 
 type Widen<T> = T extends string

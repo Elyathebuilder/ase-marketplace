@@ -1,13 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { quoteCartDelivery } from "./cart-delivery";
-import { manufacturerOf, getProduct } from "./catalog";
+import { MANUFACTURERS, PRODUCTS } from "./demo-data";
+import type { Manufacturer } from "./types";
+
+// The demo catalog, as the database would return it.
+const lookup = {
+  product: (slug: string) => PRODUCTS.find((p) => p.slug === slug),
+  maker: (slug: string) => MANUFACTURERS.find((m) => m.slug === slug) as unknown as Manufacturer | undefined,
+};
+const getProduct = lookup.product;
+const manufacturerOf = (p: { manufacturer: string }) => lookup.maker(p.manufacturer)!;
 
 // Interior paint is made by Mtatsminda Paints in Tbilisi.
 const TBILISI_PRODUCT = "interior-paint-matte-10l";
 // The walnut cutting board is made by Imereti Timber Works in Kutaisi.
 const KUTAISI_PRODUCT = "walnut-cutting-board";
 
-const deliveryTo = (city: string, lines = [{ slug: TBILISI_PRODUCT, qty: 1 }]) => quoteCartDelivery(lines, city).delivery;
+const deliveryTo = (city: string, lines = [{ slug: TBILISI_PRODUCT, qty: 1 }]) => quoteCartDelivery(lines, city, lookup).delivery;
 
 describe("delivery depends on the customer's city", () => {
   it("uses manufacturers from the expected cities", () => {
@@ -41,7 +50,7 @@ describe("a cart with two manufacturers", () => {
     { slug: TBILISI_PRODUCT, qty: 2 },
     { slug: KUTAISI_PRODUCT, qty: 1 },
   ];
-  const quote = quoteCartDelivery(lines, "Batumi");
+  const quote = quoteCartDelivery(lines, "Batumi", lookup);
 
   it("is split into one shipment per manufacturer", () => {
     expect(quote.groups.map((g) => g.manufacturer).sort()).toEqual(["imereti-timber-works", "mtatsminda-paints"]);
@@ -65,7 +74,7 @@ describe("a cart with two manufacturers", () => {
   });
 
   it("ignores products that can't be bought directly", () => {
-    const q = quoteCartDelivery([{ slug: "hotel-wardrobe-custom", qty: 1 }, { slug: "no-such-product", qty: 1 }], "Tbilisi");
+    const q = quoteCartDelivery([{ slug: "hotel-wardrobe-custom", qty: 1 }, { slug: "no-such-product", qty: 1 }], "Tbilisi", lookup);
     expect(q.groups).toHaveLength(0);
     expect(q.total).toBe(0);
   });

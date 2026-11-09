@@ -1,6 +1,12 @@
-/** Marketplace data model (Phase 1 — mirrors the tables planned for Supabase in Phase 2). */
+/** Public marketplace data model, read from the database (see lib/market/catalog-store.ts). */
 
-export type VerificationStatus = "unverified" | "pending" | "verified";
+/**
+ * What customers see about a seller.
+ * - approved: approved to sell on the marketplace (information checked, no inspection implied).
+ * - verified: additionally passed Amartani's manual verification and an inspection (the Verified badge).
+ */
+export type VerificationStatus = "approved" | "verified";
+export type SellerType = "company" | "independent";
 
 export interface Category {
   slug: string;
@@ -20,6 +26,7 @@ export interface Manufacturer {
   categories: string[];
   yearEstablished?: number;
   verification: VerificationStatus;
+  sellerType: SellerType;
   capabilities: string[];
   wholesale: string;
   contact: { email: string; phone: string };
@@ -29,6 +36,17 @@ export interface Manufacturer {
   /** Short initials for the generated logo. */
   monogram: string;
   employees: string;
+  /** Uploaded logo (served by /api/files), otherwise a generated monogram is shown. */
+  logoUrl?: string | null;
+  /** Workshop / production photos. */
+  photos?: string[];
+  /** Georgian text entered by the seller. */
+  ka?: { name?: string | null; tagline?: string | null; description?: string | null };
+}
+
+export interface ProductVariant {
+  name: string;
+  options: string[];
 }
 
 export interface PriceTier {
@@ -64,7 +82,16 @@ export interface Product {
   customizationOptions: string[];
   buyNow: boolean;
   requestQuote: boolean;
-  wholesale: { minQty: number; tiers: PriceTier[] } | null;
+  /** quoteOnly: wholesale prices are agreed by quotation; otherwise the tier price applies at checkout. */
+  wholesale: { minQty: number; tiers: PriceTier[]; quoteOnly?: boolean } | null;
+  /** Uploaded photos (served by /api/files). Empty: a generated picture is shown. */
+  images?: string[];
+  colors?: string[];
+  variants?: ProductVariant[];
+  /** False when the seller has paused sales. */
+  available?: boolean;
+  /** Georgian text entered by the seller. */
+  ka?: { name?: string | null; description?: string | null; highlights?: string[] | null };
   tags: string[];
   featured?: boolean;
   popularity: number;

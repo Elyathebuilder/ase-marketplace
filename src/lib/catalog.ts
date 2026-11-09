@@ -1,17 +1,21 @@
 /**
- * Read access to the catalog. Today it reads the demo data; in Phase 2 the same
- * functions will query Supabase, so pages don't need to change.
+ * Read access to the public catalog (server only): published products of approved sellers,
+ * from the marketplace database. Pure rules (prices, categories, URLs) live in catalog-core.ts.
  */
-import { CATEGORIES, MANUFACTURERS, PRODUCTS } from "./demo-data";
 import { categoryName, makerSearchText, searchText } from "@/i18n";
-import type { Availability, Category, Manufacturer, Product } from "./types";
+import { availabilityOf, displayPrice, getCategory, type CatalogFilters } from "./catalog-core";
+import { publicCatalog } from "./market/catalog-store";
+import { market } from "./market/server";
+import type { Manufacturer, Product } from "./types";
 
-export const getCategories = (): Category[] => CATEGORIES;
-export const getCategory = (slug: string) => CATEGORIES.find((c) => c.slug === slug);
-export const getManufacturers = (): Manufacturer[] => MANUFACTURERS;
-export const getManufacturer = (slug: string) => MANUFACTURERS.find((m) => m.slug === slug);
-export const getProduct = (slug: string) => PRODUCTS.find((p) => p.slug === slug);
-export const getAllProducts = (): Product[] => PRODUCTS;
+export * from "./catalog-core";
+
+const snap = () => publicCatalog(market().db);
+
+export const getManufacturers = (): Manufacturer[] => snap().makers;
+export const getManufacturer = (slug: string) => snap().makerBySlug.get(slug);
+export const getProduct = (slug: string) => snap().bySlug.get(slug);
+export const getAllProducts = (): Product[] => snap().products;
 
 export function manufacturerOf(product: Product): Manufacturer {
   const m = getManufacturer(product.manufacturer);
@@ -19,111 +23,33 @@ export function manufacturerOf(product: Product): Manufacturer {
   return m;
 }
 
-export function productsBy(manufacturerSlug: string) {
-  return PRODUCTS.filter((p) => p.manufacturer === manufacturerSlug);
-}
-
-export function countInCategory(slug: string) {
-  return PRODUCTS.filter((p) => p.category === slug).length;
-}
-
-export function availabilityOf(p: Product): Availability {
-  if (p.stock <= 0) return "made_to_order";
-  if (p.stock < 20) return "low_stock";
-  return "in_stock";
-}
-
-export const AVAILABILITY_LABEL: Record<Availability, string> = {
-  in_stock: "In stock",
-  low_stock: "Low stock",
-  made_to_order: "Made to order",
-};
-
-/** Lowest unit price a business can get (best wholesale tier), or null. */
-export function lowestWholesalePrice(p: Product): number | null {
-  const tiers = p.wholesale?.tiers ?? [];
-  return tiers.length ? Math.min(...tiers.map((t) => t.unitPrice)) : null;
-}
-
-/** The price shown on cards and used for price filters. */
-export function displayPrice(p: Product): number | null {
-  return p.retailPrice ?? lowestWholesalePrice(p);
-}
+export const productsBy = (manufacturerSlug: string) => getAllProducts().filter((p) => p.manufacturer === manufacturerSlug);
+export const countInCategory = (slug: string) => getAllProducts().filter((p) => p.category === slug).length;
 
 export function relatedProducts(p: Product, limit = 4): Product[] {
-  return PRODUCTS.filter((x) => x.slug !== p.slug && (x.category === p.category || x.manufacturer === p.manufacturer))
+  return getAllProducts()
+    .filter((x) => x.slug !== p.slug && (x.category === p.category || x.manufacturer === p.manufacturer))
     .sort((a, b) => Number(b.category === p.category) - Number(a.category === p.category) || b.popularity - a.popularity)
     .slice(0, limit);
 }
 
-export const featuredProducts = () => PRODUCTS.filter((p) => p.featured).slice(0, 8);
-export const popularProducts = (n = 8) => [...PRODUCTS].sort((a, b) => b.popularity - a.popularity).slice(0, n);
-export const recentProducts = (n = 8) => [...PRODUCTS].sort((a, b) => b.addedAt.localeCompare(a.addedAt)).slice(0, n);
-export const featuredManufacturers = () => MANUFACTURERS.filter((m) => m.featured);
-export const verifiedManufacturers = () => MANUFACTURERS.filter((m) => m.verification === "verified");
+export const featuredProducts = () => getAllProducts().filter((p) => p.featured).slice(0, 8);
+export const popularProducts = (n = 8) => [...getAllProducts()].sort((a, b) => b.popularity - a.popularity).slice(0, n);
+export const recentProducts = (n = 8) => [...getAllProducts()].sort((a, b) => b.addedAt.localeCompare(a.addedAt)).slice(0, n);
+export const featuredManufacturers = () => getManufacturers().filter((m) => m.featured);
+export const verifiedManufacturers = () => getManufacturers().filter((m) => m.verification === "verified");
 
 export function cities(): string[] {
-  return [...new Set(MANUFACTURERS.map((m) => m.city))].sort();
+  return [...new Set(getManufacturers().map((m) => m.city).filter(Boolean))].sort();
 }
 
 export function allTags(): string[] {
-  return [...new Set(PRODUCTS.flatMap((p) => p.tags))].sort();
-}
-
-/* ------------------------------------------------------------------ */
-/* Catalog filtering — driven by the URL so every view is shareable.   */
-/* ------------------------------------------------------------------ */
-
-export type SortKey = "popular" | "newest" | "price_asc" | "price_desc";
-
-export interface CatalogFilters {
-  q?: string;
-  category?: string;
-  manufacturer?: string;
-  min?: number;
-  max?: number;
-  availability?: Availability | "in_stock_any";
-  city?: string;
-  tag?: string;
-  verified?: boolean;
-  /** retail = can buy now; wholesale = has wholesale pricing or quote. */
-  mode?: "retail" | "wholesale";
-  sort?: SortKey;
-}
-
-type RawParams = Record<string, string | string[] | undefined>;
-
-const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.trim() || undefined;
-const num = (v: string | undefined) => {
-  if (!v) return undefined;
-  const n = Number(v);
-  return Number.isFinite(n) && n >= 0 ? n : undefined;
-};
-
-export function parseFilters(params: RawParams): CatalogFilters {
-  const availability = one(params.availability);
-  const mode = one(params.mode);
-  const sort = one(params.sort);
-  return {
-    q: one(params.q),
-    category: one(params.category),
-    manufacturer: one(params.manufacturer),
-    min: num(one(params.min)),
-    max: num(one(params.max)),
-    availability: ["in_stock", "low_stock", "made_to_order", "in_stock_any"].includes(availability ?? "")
-      ? (availability as CatalogFilters["availability"])
-      : undefined,
-    city: one(params.city),
-    tag: one(params.tag),
-    verified: one(params.verified) === "1",
-    mode: mode === "retail" || mode === "wholesale" ? mode : undefined,
-    sort: ["popular", "newest", "price_asc", "price_desc"].includes(sort ?? "") ? (sort as SortKey) : "popular",
-  };
+  return [...new Set(getAllProducts().flatMap((p) => p.tags))].sort();
 }
 
 export function filterProducts(f: CatalogFilters): Product[] {
   const q = f.q?.toLowerCase();
-  const list = PRODUCTS.filter((p) => {
+  const list = getAllProducts().filter((p) => {
     const m = manufacturerOf(p);
     if (q) {
       // Both languages are searched, so "მუხა" and "oak" find the same table.
@@ -161,19 +87,3 @@ export function filterProducts(f: CatalogFilters): Product[] {
   }
 }
 
-/** Build a catalog URL, keeping current filters and overriding some. */
-export function catalogHref(
-  current: CatalogFilters,
-  patch: Partial<Record<keyof CatalogFilters, string | number | boolean | undefined>>,
-  base = "/products",
-) {
-  const merged: Record<string, string | number | boolean | undefined> = { ...current, ...patch };
-  const params = new URLSearchParams();
-  for (const [k, v] of Object.entries(merged)) {
-    if (v === undefined || v === "" || v === false) continue;
-    if (k === "sort" && v === "popular") continue;
-    params.set(k, v === true ? "1" : String(v));
-  }
-  const qs = params.toString();
-  return `${base}${qs ? `?${qs}` : ""}`;
-}

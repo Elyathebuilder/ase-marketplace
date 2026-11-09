@@ -10,9 +10,10 @@
  * - The ledger is append-only. Corrections are new entries that point at the entry they adjust.
  * - The ledger records obligations and recorded bank transactions. It is not a bank balance.
  */
-import { getProduct } from "../catalog";
 import { quoteCartDelivery, type CartInputLine } from "../cart-delivery";
+import { catalogLookup } from "./catalog-store";
 import { percentOf, toTetri, type Tetri } from "../money";
+import type { Product } from "../types";
 import { tx, type DB } from "./db";
 import { getSettings } from "./settings";
 import {
@@ -288,6 +289,25 @@ export interface PlaceOrderInput {
 
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+/** The product as it was when ordered. Later edits by the seller never change an existing order. */
+function productSnapshot(p: Product, options: Record<string, string>) {
+  return {
+    name: p.name,
+    nameKa: p.ka?.name ?? null,
+    category: p.category,
+    specs: p.specs,
+    materials: p.materials,
+    image: p.images?.[0] ?? null,
+    tone: p.tone,
+    options,
+    retailPrice: p.retailPrice,
+    tiers: p.wholesale?.tiers ?? [],
+    productionDays: p.productionDays,
+    weightKg: p.weightKg,
+    dimensionsCm: [p.lengthCm, p.widthCm, p.heightCm],
+  };
+}
+
 export function placeOrder(ctx: Ctx, actor: Actor | null, input: PlaceOrderInput): string {
   const customer = requireRole(actor, "customer");
   const name = cleanText(input.name, 120);
@@ -298,8 +318,15 @@ export function placeOrder(ctx: Ctx, actor: Actor | null, input: PlaceOrderInput
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new MarketError("invalid_input", "invalid email");
   if (!Array.isArray(input.lines) || input.lines.length === 0 || input.lines.length > 100) throw new MarketError("empty_cart");
 
-  // Prices and delivery are recalculated here from the catalog. Nothing from the browser is trusted.
-  const quote = quoteCartDelivery(input.lines, input.city);
+  // Only verified accounts may order (the email address must be confirmed first).
+  const account = ctx.db.prepare("SELECT email_verified_at, status FROM users WHERE id = ?").get(customer.id) as { email_verified_at: string | null; status: string } | undefined;
+  if (!account || account.status !== "active") throw new MarketError("forbidden");
+  if (!account.email_verified_at) throw new MarketError("email_unverified");
+
+  // Prices and delivery are recalculated here from the catalog (published products of approved
+  // sellers only). Nothing from the browser is trusted.
+  const lookup = catalogLookup(ctx.db);
+  const quote = quoteCartDelivery(input.lines, input.city, lookup);
   if (quote.groups.length === 0) throw new MarketError("empty_cart");
   if (quote.delivery.requiresManualQuote) throw new MarketError("manual_delivery");
 
@@ -313,15 +340,15 @@ export function placeOrder(ctx: Ctx, actor: Actor | null, input: PlaceOrderInput
     const parts = quote.groups.map((g, i) => {
       const shipment = quote.delivery.shipments.find((s) => s.originId === g.manufacturer);
       if (!shipment || shipment.status !== "quoted") throw new MarketError("manual_delivery");
-      const items = g.lines.map(({ product, qty }) => {
-        const unit = toTetri(product.retailPrice!);
-        return { product, qty, unit, line: unit * qty };
+      const items = g.lines.map(({ product, qty, unitPrice, pricing, options }) => {
+        const unit = toTetri(unitPrice);
+        return { product, qty, unit, pricing, options, line: unit * qty };
       });
       const goods = items.reduce((s, x) => s + x.line, 0);
       const delivery = toTetri(shipment.price.total);
       const base = settings.commissionBase === "products" ? goods : goods + delivery;
       const commission = Math.min(percentOf(base, settings.commissionBps), goods);
-      return { id: `${id}-${LETTERS[i]}`, maker: g.manufacturer, items, goods, delivery, commission, payable: goods - commission };
+      return { id: `${id}-${LETTERS[i]}`, maker: g.manufacturer, makerName: lookup.maker(g.manufacturer)?.name ?? g.manufacturer, items, goods, delivery, commission, payable: goods - commission };
     });
     const goods = parts.reduce((s, p) => s + p.goods, 0);
     const delivery = parts.reduce((s, p) => s + p.delivery, 0);
@@ -341,8 +368,11 @@ export function placeOrder(ctx: Ctx, actor: Actor | null, input: PlaceOrderInput
         .run(p.id, id, p.maker, "awaiting_payment", p.goods, p.delivery, p.commission, p.payable);
       for (const it of p.items)
         ctx.db
-          .prepare("INSERT INTO order_items (order_id, fulfillment_id, product_slug, product_name, unit, unit_price_tetri, qty, line_tetri) VALUES (?,?,?,?,?,?,?,?)")
-          .run(id, p.id, it.product.slug, it.product.name, it.product.unit, it.unit, it.qty, it.line);
+          .prepare(
+            `INSERT INTO order_items (order_id, fulfillment_id, product_slug, product_name, unit, unit_price_tetri, qty, line_tetri, manufacturer_slug, manufacturer_name, pricing, snapshot)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+          )
+          .run(id, p.id, it.product.slug, it.product.name, it.product.unit, it.unit, it.qty, it.line, p.maker, p.makerName, it.pricing, JSON.stringify(productSnapshot(it.product, it.options)));
       const payoutId = nextId(ctx, "payouts", "PO");
       ctx.db.prepare("INSERT INTO payouts (id, fulfillment_id, status, payable_tetri) VALUES (?,?,?,?)").run(payoutId, p.id, "not_eligible", p.payable);
       notifyMaker(ctx, p.maker, "maker_new_order", { orderId: id, fulfillmentId: p.id, params: { goods: p.goods } });
@@ -463,8 +493,8 @@ function confirmOrderPaid(ctx: Ctx, order: OrderRow, by: string) {
     const days = Math.max(
       3,
       ...(ctx.db.prepare("SELECT product_slug, qty FROM order_items WHERE fulfillment_id = ?").all(f.id) as { product_slug: string; qty: number }[]).map((i) => {
-        const p = getProduct(i.product_slug);
-        return p && p.stock < i.qty ? p.productionDays : 3;
+        const p = ctx.db.prepare("SELECT stock, production_days FROM products WHERE slug = ?").get(i.product_slug) as { stock: number; production_days: number } | undefined;
+        return p && p.stock < i.qty ? p.production_days : 3;
       }),
     );
     const prepareBy = new Date(ctx.now().getTime() + days * 86_400_000).toISOString();

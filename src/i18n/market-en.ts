@@ -137,6 +137,8 @@ export const marketEn = {
     continue: "Continue shopping",
   },
   checkout: {
+    savedAddress: "Saved address",
+    newAddress: "Use a new address",
     title: "Checkout",
     intro: "Check your details and place the order. You'll pay by ordinary bank transfer afterwards; we show you the bank details on the next page.",
     contact: "Delivery details",

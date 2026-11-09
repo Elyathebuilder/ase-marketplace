@@ -66,7 +66,7 @@ export function FormNotice({ lang, sp }: { lang: Lang; sp: Record<string, string
     return (
       <p role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        {(m.errors as Record<string, string>)[err] ?? m.errors.invalid_input}
+        {(m.errors as Record<string, string>)[err] ?? getDict(lang).acc.errors[err] ?? m.errors.invalid_input}
       </p>
     );
   if (sp.ok === "1")
@@ -185,10 +185,4 @@ export function SignInRequired({ lang, text, next }: { lang: Lang; text: string;
   );
 }
 
-/** Notification text in the reader's language, with amounts formatted. */
-export function notificationText(lang: Lang, kind: string, orderId: string | null, params: Record<string, unknown>) {
-  const p: Record<string, unknown> = { ...params };
-  for (const k of ["total", "remaining", "amount", "over", "received", "payable", "goods"]) if (typeof p[k] === "number") p[`${k}Text`] = formatTetri(p[k] as number);
-  const fn = getDict(lang).market.notif[kind];
-  return fn ? fn(orderId ?? "", p) : kind;
-}
+export { notificationText } from "@/lib/market/notification-text";

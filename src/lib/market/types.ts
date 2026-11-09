@@ -85,7 +85,22 @@ export type LedgerKind =
   | "refund_due"
   | "refund_paid";
 
-export type MarketErrorCode = "forbidden" | "not_found" | "invalid_state" | "invalid_input" | "manual_delivery" | "empty_cart";
+export type MarketErrorCode =
+  | "forbidden"
+  | "not_found"
+  | "invalid_state"
+  | "invalid_input"
+  | "manual_delivery"
+  | "empty_cart"
+  | "email_unverified"
+  | "email_taken"
+  | "weak_password"
+  | "password_mismatch"
+  | "bad_credentials"
+  | "too_many_attempts"
+  | "account_suspended"
+  | "token_invalid"
+  | "seller_not_approved";
 
 /** A refused action. The UI shows a translated message for the code. */
 export class MarketError extends Error {

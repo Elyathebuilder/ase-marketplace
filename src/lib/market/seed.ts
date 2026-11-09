@@ -56,7 +56,8 @@ export function seedOrders(base: Ctx) {
   if ((base.db.prepare("SELECT COUNT(*) AS n FROM orders").get() as { n: number }).n > 0) return;
   // The story spans about nine days and ends shortly before "now".
   let clock = Math.floor(base.now().getTime() / 3600_000) * 3600_000 - 10 * 86_400_000;
-  const ctx: Ctx = { db: base.db, now: () => new Date(clock) };
+  // Demo orders are always TEST orders: none of this is real money.
+  const ctx: Ctx = { db: base.db, now: () => new Date(clock), testMode: true };
   const later = (hours: number) => (clock += hours * 3600_000);
   const day = () => new Date(clock).toISOString().slice(0, 10);
   const [nino, giorgi] = DEMO_CUSTOMERS;

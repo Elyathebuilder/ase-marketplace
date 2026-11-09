@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { TestTag } from "@/components/market/journey";
 import { Status, Table, tetri, when } from "@/components/market/ui";
 import { getDict, href, isLang } from "@/i18n";
 import { adminOrNull } from "@/lib/market/auth";
@@ -27,7 +28,7 @@ export default async function AdminOrders({ params }: { params: Params }) {
       <Table head={[a.number, a.customer, a.placed, a.total, a.received, a.shipments, a.status]}>
         {rows.map((o) => (
           <tr key={o.id}>
-            <td className="px-3 py-2"><Link href={href(lang, `/admin/orders/${o.id}`)} className="font-semibold text-red-600 hover:underline">{o.id}</Link></td>
+            <td className="px-3 py-2"><Link href={href(lang, `/admin/orders/${o.id}`)} className="font-semibold text-red-600 hover:underline">{o.id}</Link> {o.is_test === 1 && <TestTag lang={lang} />}</td>
             <td className="px-3 py-2">{o.customer_name}</td>
             <td className="px-3 py-2 text-ink-2">{when(o.created_at, lang)}</td>
             <td className="px-3 py-2 tabular-nums">{tetri(o.total_tetri)}</td>

@@ -62,6 +62,9 @@ CREATE TABLE IF NOT EXISTS orders (
   delivery_city TEXT NOT NULL,
   delivery_address TEXT NOT NULL,
   delivery_note TEXT,
+  delivery_email TEXT,
+  -- 1 = TEST order: placed in test mode, never real money, shown with a TEST label everywhere
+  is_test INTEGER NOT NULL DEFAULT 0 CHECK (is_test IN (0,1)),
   hold_kind TEXT CHECK (hold_kind IN ('hold','dispute')),
   hold_reason TEXT
 );
@@ -210,11 +213,19 @@ const TRIGGERS = APPEND_ONLY.flatMap((t) => [
 
 export type DB = DatabaseSync;
 
+/** Columns added after the first release: add them to an existing database file. */
+function migrate(db: DatabaseSync) {
+  const cols = new Set((db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name));
+  if (!cols.has("delivery_email")) db.exec("ALTER TABLE orders ADD COLUMN delivery_email TEXT");
+  if (!cols.has("is_test")) db.exec("ALTER TABLE orders ADD COLUMN is_test INTEGER NOT NULL DEFAULT 0 CHECK (is_test IN (0,1))");
+}
+
 export function openDb(file: string): DB {
   if (file !== ":memory:") mkdirSync(path.dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
   db.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;");
   db.exec(SCHEMA);
+  migrate(db);
   db.exec(TRIGGERS);
   return db;
 }

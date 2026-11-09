@@ -9,7 +9,7 @@ import path from "node:path";
 import { MarketError } from "./types";
 
 export const MAX_UPLOAD = 5 * 1024 * 1024;
-const dir = () => process.env.ASE_UPLOAD_DIR || path.join(process.cwd(), "data", "uploads");
+const dir = () => process.env.ASE_UPLOAD_DIR || path.join(/* turbopackIgnore: true */ process.cwd(), "data", "uploads");
 
 const KINDS = [
   { ext: "pdf", type: "application/pdf", magic: [0x25, 0x50, 0x44, 0x46] },
@@ -26,7 +26,7 @@ export async function saveUpload(file: FormDataEntryValue | null): Promise<{ fil
   if (!kind) throw new MarketError("invalid_input", "file must be PDF, PNG or JPG");
   const name = `${randomBytes(16).toString("hex")}.${kind.ext}`;
   mkdirSync(dir(), { recursive: true });
-  writeFileSync(path.join(dir(), name), bytes);
+  writeFileSync(path.join(/* turbopackIgnore: true */ dir(), name), bytes);
   const original = (file.name || `file.${kind.ext}`).replace(/[^\p{L}\p{N}._ -]/gu, "_").slice(0, 100);
   return { file: name, name: original };
 }
@@ -34,7 +34,7 @@ export async function saveUpload(file: FormDataEntryValue | null): Promise<{ fil
 export function readUpload(name: string): { body: Buffer; type: string } | null {
   if (!/^[a-f0-9]{32}\.(pdf|png|jpg)$/.test(name)) return null;
   try {
-    const body = readFileSync(path.join(dir(), name));
+    const body = readFileSync(path.join(/* turbopackIgnore: true */ dir(), name));
     return { body, type: KINDS.find((k) => name.endsWith(`.${k.ext}`))!.type };
   } catch {
     return null;

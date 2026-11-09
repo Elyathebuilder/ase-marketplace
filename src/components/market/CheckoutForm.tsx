@@ -3,35 +3,61 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
-import { Info, Landmark, MapPin } from "lucide-react";
+import { Info, Landmark, Truck } from "lucide-react";
 import { href, locMaker, locProduct, place } from "@/i18n";
 import { useI18n } from "@/i18n/client";
 import { useCart } from "@/lib/cart";
 import { quoteCartDelivery } from "@/lib/cart-delivery";
 import { getManufacturer } from "@/lib/catalog";
-import { formatGel } from "@/lib/format";
 import { placeOrderAction } from "@/lib/market/actions";
+import { toTetri } from "@/lib/money";
 import { PLACES } from "@/lib/places";
+import { OrderSummary, TestBanner, type SummaryShipment } from "./journey";
 
-function Submit() {
+function Submit({ busy }: { busy?: boolean }) {
   const { pending } = useFormStatus();
   const { t } = useI18n();
   return (
-    <button type="submit" disabled={pending} className="btn btn-primary mt-4 w-full py-3">
-      {pending ? t.market.checkout.placing : t.market.checkout.place}
+    <button type="submit" disabled={pending || busy} className="btn btn-primary mt-4 w-full py-3">
+      {pending || busy ? t.market.checkout.placing : t.market.checkout.place}
     </button>
   );
 }
 
+export interface CheckoutDetails {
+  name: string;
+  phone: string;
+  email: string;
+  city: string;
+  address: string;
+  note: string;
+  lines: { slug: string; qty: number }[];
+}
+
 /**
- * Checkout. The totals shown here are an estimate for the customer; the server recalculates
- * every price and delivery charge from the catalog when the order is placed.
+ * Checkout: contact and delivery details, delivery per shipment, and the order summary.
+ * The totals here are an estimate for the customer; the server recalculates every price and
+ * delivery charge from the catalog when the order is placed. On the static preview site,
+ * `onPlace` replaces the server and keeps a TEST order in the browser instead.
  */
-export function CheckoutForm({ defaultName, defaultCity }: { defaultName: string; defaultCity: string }) {
+export function CheckoutForm({
+  defaultName,
+  defaultEmail = "",
+  defaultCity,
+  testMode,
+  onPlace,
+}: {
+  defaultName: string;
+  defaultEmail?: string;
+  defaultCity: string;
+  testMode: boolean;
+  onPlace?: (d: CheckoutDetails) => void;
+}) {
   const { lang, t } = useI18n();
   const c = t.market.checkout;
   const lines = useCart();
   const [city, setCity] = useState(PLACES[defaultCity] ? defaultCity : "Tbilisi");
+  const [busy, setBusy] = useState(false);
   const quote = quoteCartDelivery(lines, city);
 
   if (quote.groups.length === 0)
@@ -42,84 +68,102 @@ export function CheckoutForm({ defaultName, defaultCity }: { defaultName: string
       </div>
     );
 
+  const shipments: SummaryShipment[] = quote.groups.map((g) => {
+    const m = locMaker(getManufacturer(g.manufacturer)!, lang);
+    const s = quote.delivery.shipments.find((x) => x.originId === g.manufacturer);
+    return {
+      id: g.manufacturer,
+      maker: m.name,
+      city: m.city,
+      items: g.lines.map(({ product, qty }) => ({ key: product.slug, name: locProduct(product, lang).name, qty, line: toTetri(product.retailPrice!) * qty })),
+      delivery: s?.status === "quoted" ? toTetri(s.price.total) : 0,
+    };
+  });
+  const goods = shipments.reduce((s, x) => s + x.items.reduce((a, i) => a + i.line, 0), 0);
+  const delivery = shipments.reduce((s, x) => s + x.delivery, 0);
+  const cartLines = lines.map((l) => ({ slug: l.slug, qty: l.qty }));
+
+  const onSubmit = onPlace
+    ? (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const f = new FormData(e.currentTarget);
+        const get = (k: string) => String(f.get(k) ?? "").trim();
+        setBusy(true);
+        onPlace({ name: get("name"), phone: get("phone"), email: get("email"), city, address: get("address"), note: get("note"), lines: cartLines });
+      }
+    : undefined;
+
   return (
-    <form action={placeOrderAction} className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+    <form action={onPlace ? undefined : placeOrderAction} onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-[1fr_22rem]" data-checkout>
       <input type="hidden" name="lang" value={lang} />
-      <input type="hidden" name="lines" value={JSON.stringify(lines.map((l) => ({ slug: l.slug, qty: l.qty })))} />
-      <section className="card space-y-4 p-4 md:p-5">
-        <h2 className="text-base font-bold">{c.contact}</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="label" htmlFor="co-name">{c.name}</label>
-            <input id="co-name" name="name" required maxLength={120} defaultValue={defaultName} autoComplete="name" className="input" />
+      <input type="hidden" name="lines" value={JSON.stringify(cartLines)} />
+      <div className="min-w-0 space-y-5">
+        {testMode && <TestBanner lang={lang} extra={t.market.test.modeNote} />}
+        <section className="card space-y-4 p-4 md:p-5">
+          <h2 className="text-base font-bold">{c.contact}</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label" htmlFor="co-name">{c.name}</label>
+              <input id="co-name" name="name" required maxLength={120} defaultValue={defaultName} autoComplete="name" className="input" />
+            </div>
+            <div>
+              <label className="label" htmlFor="co-phone">{c.phone}</label>
+              <input id="co-phone" name="phone" required maxLength={40} type="tel" autoComplete="tel" className="input" placeholder="+995 5__ __ __ __" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label" htmlFor="co-email">{c.email}</label>
+              <input id="co-email" name="email" required maxLength={200} type="email" autoComplete="email" defaultValue={defaultEmail} className="input" />
+            </div>
           </div>
-          <div>
-            <label className="label" htmlFor="co-phone">{c.phone}</label>
-            <input id="co-phone" name="phone" required maxLength={40} type="tel" autoComplete="tel" className="input" placeholder="+995 5__ __ __ __" />
+        </section>
+
+        <section className="card space-y-4 p-4 md:p-5">
+          <h2 className="flex items-center gap-2 text-base font-bold"><Truck className="h-4 w-4 text-red-600" aria-hidden="true" />{c.delivery}</h2>
+          <p className="text-sm text-ink-2">{c.deliveryText}</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label" htmlFor="co-city">{c.city}</label>
+              <select id="co-city" name="city" value={city} onChange={(e) => setCity(e.target.value)} className="input">
+                {Object.keys(PLACES).map((p) => (
+                  <option key={p} value={p}>{place(p, lang)}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="co-address">{c.address}</label>
+              <input id="co-address" name="address" required maxLength={300} autoComplete="street-address" className="input" />
+            </div>
           </div>
+          <ul className="divide-y divide-line rounded-lg border border-line text-sm">
+            {shipments.map((s) => (
+              <li key={s.id} className="flex justify-between gap-3 px-3 py-2">
+                <span className="text-ink-2">{t.cart.shipmentFrom(s.maker, s.city)}</span>
+                <span className="shrink-0 font-semibold tabular-nums">{s.delivery ? `${(s.delivery / 100).toFixed(2)} ₾` : t.cart.toConfirm}</span>
+              </li>
+            ))}
+          </ul>
           <div>
-            <label className="label" htmlFor="co-city">{c.city}</label>
-            <select id="co-city" name="city" value={city} onChange={(e) => setCity(e.target.value)} className="input">
-              {Object.keys(PLACES).map((p) => (
-                <option key={p} value={p}>{place(p, lang)}</option>
-              ))}
-            </select>
+            <label className="label" htmlFor="co-note">{c.note}</label>
+            <textarea id="co-note" name="note" maxLength={500} rows={2} className="input" />
           </div>
-          <div>
-            <label className="label" htmlFor="co-address">{c.address}</label>
-            <input id="co-address" name="address" required maxLength={300} autoComplete="street-address" className="input" />
-          </div>
-        </div>
-        <div>
-          <label className="label" htmlFor="co-note">{c.note}</label>
-          <textarea id="co-note" name="note" maxLength={500} rows={2} className="input" />
-        </div>
+        </section>
+
         <p className="flex items-start gap-2 rounded-lg bg-paper-2 px-3 py-2 text-sm text-ink-2">
           <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden="true" />
           {c.payNote}
         </p>
-      </section>
+      </div>
 
-      <aside className="card h-fit p-4 lg:sticky lg:top-32">
-        <h2 className="text-base font-bold">{c.summary}</h2>
-        <ul className="mt-3 space-y-3 text-sm">
-          {quote.groups.map((g) => {
-            const m = locMaker(getManufacturer(g.manufacturer)!, lang);
-            const s = quote.delivery.shipments.find((x) => x.originId === g.manufacturer);
-            return (
-              <li key={g.manufacturer} className="rounded-lg border border-line p-2.5">
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-ink-2">
-                  <MapPin className="h-3.5 w-3.5 text-red-600" aria-hidden="true" /> {t.cart.shipmentFrom(m.name, m.city)}
-                </p>
-                <ul className="mt-1.5 space-y-1">
-                  {g.lines.map(({ product, qty, lineTotal }) => (
-                    <li key={product.slug} className="flex justify-between gap-2">
-                      <span className="text-ink-2">{qty} × {locProduct(product, lang).name}</span>
-                      <span className="tabular-nums">{formatGel(lineTotal)}</span>
-                    </li>
-                  ))}
-                  <li className="flex justify-between gap-2 text-muted">
-                    <span>{t.cart.shipmentDelivery}</span>
-                    <span className="tabular-nums">{s?.status === "quoted" ? formatGel(s.price.total) : t.cart.toConfirm}</span>
-                  </li>
-                </ul>
-              </li>
-            );
-          })}
-        </ul>
-        <dl className="mt-4 space-y-1.5 text-sm">
-          <div className="flex justify-between text-ink-2"><dt>{t.cart.goods}</dt><dd className="tabular-nums">{formatGel(quote.goods)}</dd></div>
-          <div className="flex justify-between text-ink-2"><dt>{t.cart.delivery}</dt><dd className="tabular-nums">{formatGel(quote.delivery.quotedTotal)}</dd></div>
-          <div className="flex justify-between border-t border-line pt-2 text-base font-bold"><dt>{t.cart.total}</dt><dd className="tabular-nums">{formatGel(quote.total)}</dd></div>
-        </dl>
+      <aside className="h-fit lg:sticky lg:top-32">
+        <OrderSummary lang={lang} shipments={shipments} goods={goods} delivery={delivery} total={goods + delivery} />
         {quote.delivery.requiresManualQuote ? (
           <p className="mt-4 rounded-lg bg-warn-50 px-3 py-2 text-sm text-warn">{c.manual}</p>
         ) : (
-          <Submit />
+          <Submit busy={busy} />
         )}
         <p className="mt-2 flex gap-1.5 text-xs text-muted">
           <Info className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          {c.serverCheck}
+          {onPlace ? t.market.test.previewNote : c.serverCheck}
         </p>
       </aside>
     </form>

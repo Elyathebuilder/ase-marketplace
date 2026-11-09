@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Clock, Info } from "lucide-react";
+import { TestBanner, TestTag } from "@/components/market/journey";
 import { ActionButton, FormNotice, ReasonAction, SignInRequired, Status, tetri, when } from "@/components/market/ui";
 import { getDict, href, isLang, locProduct, place } from "@/i18n";
 import { getProduct } from "@/lib/catalog";
@@ -48,9 +49,11 @@ export default async function MakerOrderPage({ params, searchParams }: { params:
       </Link>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-extrabold">{mk.orders.order(o.orderNumber)}</h1>
+        {o.isTest && <TestTag lang={lang} />}
         <Status value={o.status} labels={mk.shipmentStatus} />
         <span className="text-sm text-muted">{when(o.placedAt, lang)}</span>
       </div>
+      {o.isTest && <TestBanner lang={lang} />}
       <FormNotice lang={lang} sp={sp} />
 
       {o.status !== "rejected" && o.status !== "cancelled" &&

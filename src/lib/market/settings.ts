@@ -19,6 +19,12 @@ export interface Settings {
   bankName: string;
   bankIban: string;
   bankSwift: string;
+  /**
+   * Test mode: every new order is a TEST order. Customers see test bank details that are not a
+   * real account, and test orders are left out of the financial totals. On unless ASE_TEST_MODE=0.
+   * Not editable in the admin pages, so it can't be switched off by accident.
+   */
+  testMode: boolean;
 }
 
 /** Demo defaults. The bank details are clearly placeholders until the owner enters the real ones. */
@@ -30,22 +36,28 @@ export const DEFAULT_SETTINGS: Settings = {
   bankName: "Demo Bank of Georgia",
   bankIban: "GE00 DEMO 0000 0000 0000 00",
   bankSwift: "DEMOGE22",
+  testMode: true,
 };
 
-const KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[];
+export { TEST_BANK } from "./test-bank";
+
+export const isTestMode = () => process.env.ASE_TEST_MODE !== "0";
+
+type EditableKey = Exclude<keyof Settings, "testMode">;
+const KEYS = (Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]).filter((k): k is EditableKey => k !== "testMode");
 
 export function getSettings(ctx: Ctx): Settings {
   const rows = ctx.db.prepare("SELECT key, value FROM settings").all() as { key: string; value: string }[];
-  const out: Settings = { ...DEFAULT_SETTINGS };
+  const out: Settings = { ...DEFAULT_SETTINGS, testMode: ctx.testMode ?? isTestMode() };
   for (const { key, value } of rows) {
-    if (!KEYS.includes(key as keyof Settings)) continue;
-    const k = key as keyof Settings;
+    if (!KEYS.includes(key as EditableKey)) continue;
+    const k = key as EditableKey;
     (out as unknown as Record<string, unknown>)[k] = typeof DEFAULT_SETTINGS[k] === "number" ? Number(value) : value;
   }
   return out;
 }
 
-function validate(k: keyof Settings, v: unknown): string {
+function validate(k: EditableKey, v: unknown): string {
   switch (k) {
     case "commissionBps": {
       const n = Number(v);

@@ -12,7 +12,7 @@ const g = globalThis as unknown as { __aseMarket?: Ctx };
 export function market(): Ctx {
   if (typeof window !== "undefined") throw new Error("market() is server-only");
   if (!g.__aseMarket) {
-    const file = process.env.ASE_DB_PATH || path.join(process.cwd(), "data", "ase.db");
+    const file = process.env.ASE_DB_PATH || path.join(/* turbopackIgnore: true */ process.cwd(), "data", "ase.db");
     const ctx: Ctx = { db: openDb(file), now: () => new Date() };
     seedUsers(ctx);
     if (process.env.ASE_SEED_DEMO !== "0") seedOrders(ctx);
@@ -22,8 +22,8 @@ export function market(): Ctx {
 }
 
 /** Fresh in-memory database, for tests. */
-export function memoryMarket(now: () => Date = () => new Date()): Ctx {
-  const ctx: Ctx = { db: openDb(":memory:"), now };
+export function memoryMarket(now: () => Date = () => new Date(), testMode = false): Ctx {
+  const ctx: Ctx = { db: openDb(":memory:"), now, testMode };
   seedUsers(ctx);
   return ctx;
 }

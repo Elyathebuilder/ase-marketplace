@@ -19,7 +19,7 @@ export function AdminNav() {
   const { lang, t } = useI18n();
   const path = stripLang(usePathname());
   return (
-    <nav aria-label="Admin" className="border-b border-line bg-surface">
+    <nav aria-label="Admin" className="border-b border-line bg-surface" data-island="admin-nav">
       <ul className="container-page scroll-row auto-cols-max gap-1 py-1.5">
         {ITEMS.map(([href, key]) => {
           const active = href === "/admin" ? path === href : path.startsWith(href);

@@ -2,10 +2,10 @@
 
 ## Where we stopped (9 November 2026)
 
-Latest work: the order, bank-transfer payment, order tracking and manufacturer settlement workflow, on a built-in demo database with demo sign-in (customer, manufacturer, admin). 55 tests pass.
+Latest work: the full customer purchase journey in TEST mode (basket, checkout with contact and delivery details, payment page with bank-transfer instructions, payment notification, confirmation, tracking). Before this, checkout could not be reached on the published preview. 57 tests pass.
 
 **Next session, in this order:**
-1. Owner tries the workflow: sign in at `/signin` as each role (run the app locally; the static preview can't save orders).
+1. Owner tries the TEST purchase journey on the preview site, then the full workflow locally by signing in at `/signin` as each role.
 2. Owner gives Amartani's real bank details, commission rate and payment deadline (editable in Admin → Settings).
 3. Native Georgian speaker reviews `src/i18n/ka.ts`, `src/i18n/market-ka.ts` and `src/i18n/data-ka.ts`.
 4. Phase 2: move the demo database to Supabase (`supabase/migrations/0001_orders_payments.sql`) and real sign-in; receipts to private Supabase Storage.
@@ -25,7 +25,10 @@ Latest work: the order, bank-transfer payment, order tracking and manufacturer s
 | Delivery engine: smallest suitable vehicle, utilization, pricing, manual-quote fallback, per-manufacturer shipments, 22 unit tests | Done (module) |
 | Delivery estimate depends on the customer's city (approximate city-to-city distance); customers see only "Estimated delivery: X ₾" | Done |
 | Internal delivery calculator with full breakdown and rate table at `/admin/delivery` | Done (no access control yet) |
-| Cart (kept in the browser): one shipment per manufacturer, combined delivery total; checkout switched off | Done (preview) |
+| Cart (kept in the browser): one shipment per manufacturer, combined delivery total | Done |
+| Purchase journey: checkout (name, phone, email, city, address, note) → payment page with bank-transfer instructions → payment notification → confirmation → tracking timeline; one-click demo sign-in from checkout | Done (demo database) |
+| TEST mode (`ASE_TEST_MODE`, on unless set to `0`): orders flagged TEST everywhere, placeholder bank details instead of real ones, admin overview keeps real and TEST money apart; never changeable from the admin pages | Done |
+| Static preview: the same journey runs in the browser only, with TEST orders kept in localStorage (`tools/preview`) | Done |
 | Languages: Georgian default at plain URLs, English under `/en`, "ქართული \| English" switcher; all UI and demo catalog translated | Done (needs native review) |
 | Seller portal preview: dashboard, orders, quotations, products, finances, company profile (demo data, nothing saved) | Done (UI only) |
 | Orders and bank-transfer payments: checkout, bank details, "I have made the payment" with receipt, admin verification (confirm, partial, incorrect amount, reject, ask for the rest) | Done (demo database) |

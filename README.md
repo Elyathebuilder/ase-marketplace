@@ -44,11 +44,21 @@ Tokens live in `src/app/globals.css`.
 ## Orders and payments (demo)
 
 Sign in at `/signin` with a demo customer, manufacturer or administrator account.
-Customer: cart → checkout → bank details → "I have made the payment" → order timeline.
+Customer: basket → checkout (a one-click demo sign-in appears there) → payment page with bank details →
+transfer details → confirmation → order tracking.
 Manufacturer: `/seller/orders` and `/seller/finances` show only that manufacturer's part.
 Admin: `/admin` (overview, orders, payments, settlements, refunds, settings).
 Delete the `data/` folder to start again with fresh demo orders. Environment variables:
-`ASE_SESSION_SECRET` (cookie signing secret), `ASE_DB_PATH`, `ASE_SEED_DEMO=0` (no demo orders).
+`ASE_SESSION_SECRET` (cookie signing secret), `ASE_DB_PATH`, `ASE_SEED_DEMO=0` (no demo orders),
+`ASE_TEST_MODE=0` (switch TEST mode off; it is on by default).
+
+**TEST mode.** New orders are marked TEST, show placeholder bank details ("do not transfer money") instead of
+Amartani's real account, and are counted apart from real orders in the admin overview. A test payment
+notification is never treated as a received payment: an administrator still has to verify it.
+
+**Static preview** (`tools/preview`): `python3 tools/preview/crawl.py OUT` copies the running app (port 3100)
+into static pages, then `PREVIEW_OUT=OUT npx vite build --config tools/preview/vite.config.mjs` builds the
+browser-only parts. On the preview, checkout creates TEST orders kept only in that browser.
 
 ## Languages
 

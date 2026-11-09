@@ -19,7 +19,7 @@ let cached: string | undefined;
 function secret(): string {
   if (process.env.ASE_SESSION_SECRET) return process.env.ASE_SESSION_SECRET;
   if (cached) return cached;
-  const file = path.join(process.cwd(), "data", ".session-secret");
+  const file = path.join(/* turbopackIgnore: true */ process.cwd(), "data", ".session-secret");
   if (!existsSync(file)) {
     mkdirSync(path.dirname(file), { recursive: true });
     writeFileSync(file, randomBytes(32).toString("hex"), { mode: 0o600 });

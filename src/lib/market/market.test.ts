@@ -30,7 +30,7 @@ import {
   submitPayment,
   type Ctx,
 } from "./service";
-import { getSettings, updateSettings } from "./settings";
+import { TEST_BANK, getSettings, updateSettings } from "./settings";
 import type { Actor } from "./types";
 
 const [nino, giorgi] = DEMO_CUSTOMERS;
@@ -444,7 +444,8 @@ describe("audit trail", () => {
 describe("demo data", () => {
   it("seeds a consistent set of orders through the real workflow", () => {
     seedOrders(ctx);
-    const ov = financialOverview(ctx, admin);
+    const ov = financialOverview(ctx, admin, { test: true });
+    expect(financialOverview(ctx, admin).received).toBe(0);
     expect(ov.received).toBeGreaterThan(0);
     expect(ov.payoutsCompleted).toBeGreaterThan(0);
     expect(ov.awaitingVerification.n).toBe(1);
@@ -452,5 +453,40 @@ describe("demo data", () => {
     expect(ov.ledgerNet).toBe(ov.received - ov.payoutsCompleted - ov.refundsCompleted);
     const last = (ctx.db.prepare("SELECT MAX(at) AS m FROM status_history").get() as { m: string }).m;
     expect(Date.parse(last)).toBeLessThanOrEqual(clock);
+  });
+});
+
+describe("test mode", () => {
+  it("marks orders as TEST, hides real bank details and keeps them out of the real totals", () => {
+    updateSettings(ctx, admin, { bankIban: "GE29 REAL 0000 1111 2222 33" });
+    const real = order([{ slug: "walnut-cutting-board", qty: 1 }]);
+    payInFull(real);
+    ctx.testMode = true;
+    const test = order([{ slug: "walnut-cutting-board", qty: 1 }]);
+    expect(getOrder(ctx, real)!.is_test).toBe(0);
+    expect(getOrder(ctx, test)!.is_test).toBe(1);
+
+    const view = customerOrder(ctx, nino, test);
+    expect(view.isTest).toBe(true);
+    expect(view.bank).toEqual(TEST_BANK);
+    expect(JSON.stringify(view)).not.toContain("GE29 REAL");
+    expect(customerOrder(ctx, nino, real).bank.iban).toBe("GE29 REAL 0000 1111 2222 33");
+
+    // A test payment is never confirmed by the form: it still waits for an admin.
+    const pid = submitPayment(ctx, nino, test, { amount: lari(getOrder(ctx, test)!.total_tetri), date: today(), reference: "TEST-1" });
+    expect(payment(test).status).toBe("submitted");
+    recordIncomingPayment(ctx, admin, pid, { received: lari(getOrder(ctx, test)!.total_tetri), bankReference: "TEST" });
+
+    const realTotals = financialOverview(ctx, admin);
+    const testTotals = financialOverview(ctx, admin, { test: true });
+    expect(realTotals.received).toBe(getOrder(ctx, real)!.total_tetri);
+    expect(testTotals.received).toBe(getOrder(ctx, test)!.total_tetri);
+    expect(realTotals.testOrders).toBe(1);
+  });
+
+  it("saves the customer's email and rejects an invalid one", () => {
+    const id = placeOrder(ctx, nino, { ...address, email: "nino@example.ge", lines: [{ slug: "walnut-cutting-board", qty: 1 }] });
+    expect(getOrder(ctx, id)!.delivery_email).toBe("nino@example.ge");
+    expect(() => placeOrder(ctx, nino, { ...address, email: "not-an-email", lines: [{ slug: "walnut-cutting-board", qty: 1 }] })).toThrow("invalid_input");
   });
 });

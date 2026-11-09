@@ -39,13 +39,14 @@ function errorCode(e: unknown): string {
   return "invalid_input";
 }
 
-/** Runs one action and returns to the page with ?ok=1 or ?error=<code>. */
+/** Runs one action, then goes to "next" (or back with ?ok=1); on failure back with ?error=<code>. */
 async function run(f: FormData, fn: (actor: Actor | null) => void | Promise<void>) {
   const back = safeBack(f);
+  const next = str(f, "next");
   let target: string;
   try {
     await fn(await currentActor());
-    target = withParam(back, "ok", "1");
+    target = next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : withParam(back, "ok", "1");
   } catch (e) {
     target = withParam(back, "error", errorCode(e));
   }
@@ -86,12 +87,13 @@ export async function placeOrderAction(f: FormData) {
       name: str(f, "name"),
       phone: str(f, "phone"),
       address: str(f, "address"),
+      email: str(f, "email"),
       note: str(f, "note"),
     });
   } catch (e) {
     error = errorCode(e);
   }
-  redirect(id ? href(lang, `/account/orders/${id}?placed=1`) : withParam(href(lang, "/checkout"), "error", error));
+  redirect(id ? href(lang, `/account/orders/${id}/payment?placed=1`) : withParam(href(lang, "/checkout"), "error", error));
 }
 
 /* ---------------- Everything else ---------------- */

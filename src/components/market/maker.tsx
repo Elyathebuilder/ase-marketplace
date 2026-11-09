@@ -7,6 +7,7 @@ import { getProduct } from "@/lib/catalog";
 import type { Actor } from "@/lib/market/types";
 import { makerFinance, makerOrders, type MakerOrder } from "@/lib/market/queries";
 import { market } from "@/lib/market/server";
+import { TestTag } from "./journey";
 import { Status, Table, tetri, when } from "./ui";
 
 const itemsText = (o: MakerOrder, lang: Lang) =>
@@ -28,6 +29,7 @@ export function MakerOrderCard({ o, lang }: { o: MakerOrder; lang: Lang }) {
     <Link href={href(lang, `/seller/orders/live/${o.id}`)} className={`card block p-4 transition hover:shadow-[var(--shadow-lift)] ${o.status === "new" ? "border-red-200" : ""}`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-bold text-ink">{o.orderNumber}</span>
+        {o.isTest && <TestTag lang={lang} />}
         <Status value={o.status} labels={m.shipmentStatus} />
         <span className="ml-auto text-xs text-muted">{when(o.placedAt, lang)}</span>
       </div>

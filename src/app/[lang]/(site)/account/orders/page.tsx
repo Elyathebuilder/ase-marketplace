@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { TestTag } from "@/components/market/journey";
 import { Status, SignInRequired, tetri, when } from "@/components/market/ui";
 import { getDict, href, isLang } from "@/i18n";
 import { currentActor } from "@/lib/market/auth";
@@ -37,6 +38,7 @@ export default async function MyOrdersPage({ params }: { params: Params }) {
               <Link href={href(lang, `/account/orders/${o.id}`)} className="card flex flex-wrap items-center gap-3 p-4 transition hover:shadow-[var(--shadow-lift)]">
                 <span className="font-bold text-ink">{m.orders.order(o.id)}</span>
                 <Status value={o.status} labels={m.orderStatus} />
+                {o.is_test === 1 && <TestTag lang={lang} />}
                 <span className="text-xs text-muted">{m.orders.placedOn(when(o.created_at, lang, false))}</span>
                 <span className="ml-auto font-bold tabular-nums">{tetri(o.total_tetri)}</span>
               </Link>

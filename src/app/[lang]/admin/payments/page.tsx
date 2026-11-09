@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Paperclip } from "lucide-react";
+import { TestTag } from "@/components/market/journey";
 import { ActionButton, ActionForm, FormNotice, ReasonAction, Status, Table, tetri, when } from "@/components/market/ui";
 import { getDict, href, isLang } from "@/i18n";
 import { adminOrNull } from "@/lib/market/auth";
@@ -50,7 +51,7 @@ export default async function AdminPayments({ params, searchParams }: { params: 
             return (
               <tr key={r.id}>
                 <td className="px-3 py-2 font-semibold">{r.id}</td>
-                <td className="px-3 py-2"><Link href={href(lang, `/admin/orders/${r.order_id}`)} className="text-red-600 hover:underline">{r.order_id}</Link></td>
+                <td className="px-3 py-2"><Link href={href(lang, `/admin/orders/${r.order_id}`)} className="text-red-600 hover:underline">{r.order_id}</Link> {r.is_test === 1 && <TestTag lang={lang} />}</td>
                 <td className="px-3 py-2">{r.customer_name}</td>
                 <td className="px-3 py-2 tabular-nums">{tetri(r.expected_tetri)}</td>
                 <td className={`px-3 py-2 tabular-nums ${r.reported_tetri != null && r.reported_tetri !== r.expected_tetri ? "font-semibold text-warn" : ""}`}>

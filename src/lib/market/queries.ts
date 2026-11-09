@@ -4,7 +4,7 @@
  * - a manufacturer reads only its own part of each order and its own payouts;
  * - an admin reads everything.
  */
-import { getSettings } from "./settings";
+import { TEST_BANK, getSettings } from "./settings";
 import {
   amountDue,
   fulfillmentsOf,
@@ -148,7 +148,9 @@ export function customerOrder(ctx: Ctx, actor: Actor | null, orderId: string) {
     received: ledgerSum(ctx, orderId, "customer_payment"),
     refunded: ledgerSum(ctx, orderId, "refund_paid"),
     due: amountDue(ctx, order),
-    bank: { holder: s.bankAccountHolder, bank: s.bankName, iban: s.bankIban, swift: s.bankSwift },
+    // A TEST order never shows a real bank account, so nobody transfers real money for it.
+    bank: order.is_test ? TEST_BANK : { holder: s.bankAccountHolder, bank: s.bankName, iban: s.bankIban, swift: s.bankSwift },
+    isTest: order.is_test === 1,
   };
 }
 
@@ -168,6 +170,7 @@ function makerView(ctx: Ctx, f: FulfillmentRow) {
   return {
     id: f.id,
     orderNumber: order.id,
+    isTest: order.is_test === 1,
     placedAt: order.created_at,
     status: f.status,
     orderCancelled: order.status === "cancelled" || order.status === "refunded",
@@ -236,6 +239,7 @@ export function makerFinance(ctx: Ctx, actor: Actor | null) {
 
 export interface AdminPaymentRow extends PaymentRow {
   customer_name: string;
+  is_test: number;
   order_total: number;
   verified_by_name: string | null;
 }
@@ -244,7 +248,7 @@ export function adminPayments(ctx: Ctx, actor: Actor | null, status?: string) {
   requireAdmin(actor);
   const rows = ctx.db
     .prepare(
-      `SELECT p.*, u.name AS customer_name, o.total_tetri AS order_total, v.name AS verified_by_name
+      `SELECT p.*, u.name AS customer_name, o.total_tetri AS order_total, o.is_test, v.name AS verified_by_name
        FROM payments p JOIN orders o ON o.id = p.order_id JOIN users u ON u.id = o.customer_id LEFT JOIN users v ON v.id = p.verified_by
        ${status ? "WHERE p.status = ?" : ""} ORDER BY COALESCE(p.submitted_at, p.created_at) DESC, p.id DESC`,
     )
@@ -316,6 +320,7 @@ export function adminOrder(ctx: Ctx, actor: Actor | null, orderId: string) {
 }
 
 export interface SettlementRow extends PayoutRow {
+  is_test: number;
   order_id: string;
   fulfillment_id: string;
   manufacturer_slug: string;
@@ -336,7 +341,7 @@ export function adminSettlements(ctx: Ctx, actor: Actor | null) {
   requireAdmin(actor);
   return ctx.db
     .prepare(
-      `SELECT po.*, f.order_id, f.manufacturer_slug, f.status AS fulfillment_status, f.goods_tetri, f.commission_tetri,
+      `SELECT po.*, o.is_test, f.order_id, f.manufacturer_slug, f.status AS fulfillment_status, f.goods_tetri, f.commission_tetri,
          o.commission_bps, o.commission_base, o.hold_kind AS order_hold, b.account_holder, b.bank_name, b.iban,
          ua.name AS authorized_by_name, uc.name AS completed_by_name
        FROM payouts po JOIN fulfillments f ON f.id = po.fulfillment_id JOIN orders o ON o.id = f.order_id
@@ -358,37 +363,48 @@ export function adminRefunds(ctx: Ctx, actor: Actor | null) {
  * Totals across all orders, from the ledger. These are what admins have recorded,
  * not a balance read from the bank.
  */
-export function financialOverview(ctx: Ctx, actor: Actor | null) {
+export function financialOverview(ctx: Ctx, actor: Actor | null, opts: { test?: boolean } = {}) {
   requireAdmin(actor);
-  const sum = (kind: string) => (ctx.db.prepare("SELECT COALESCE(SUM(amount_tetri),0) AS s FROM ledger_entries WHERE kind = ?").get(kind) as { s: number }).s;
-  const one = <T>(sql: string, ...a: string[]) => ctx.db.prepare(sql).get(...a) as T;
+  // Real and TEST orders are never added together. TEST orders are shown only on request.
+  const t = opts.test ? 1 : 0;
+  const ledger = "ledger_entries l JOIN orders o ON o.id = l.order_id AND o.is_test = ?";
+  const one = <T>(sql: string, ...a: (string | number)[]) => ctx.db.prepare(sql).get(...a) as T;
+  const sum = (kind: string) => one<{ s: number }>(`SELECT COALESCE(SUM(l.amount_tetri),0) AS s FROM ${ledger} WHERE l.kind = ?`, t, kind).s;
   const today = ctx.now().toISOString().slice(0, 10);
   const received = sum("customer_payment");
   const payable = sum("manufacturer_payable");
   const transferred = sum("manufacturer_payout");
   const refundPaid = sum("refund_paid");
-  const awaiting = one<{ n: number; s: number }>("SELECT COUNT(*) AS n, COALESCE(SUM(reported_tetri),0) AS s FROM payments WHERE status IN ('submitted','verification_pending')");
-  const eligible = one<{ n: number; s: number }>("SELECT COUNT(*) AS n, COALESCE(SUM(payable_tetri),0) AS s FROM payouts WHERE status = 'eligible'");
-  const inProgress = one<{ n: number; s: number }>("SELECT COUNT(*) AS n, COALESCE(SUM(payable_tetri),0) AS s FROM payouts WHERE status IN ('authorized','transfer_initiated','transfer_failed')");
-  const refundsPending = one<{ n: number; s: number }>("SELECT COUNT(*) AS n, COALESCE(SUM(amount_tetri),0) AS s FROM refunds WHERE status = 'pending'");
-  // Active orders: received minus what already left the bank for them.
-  const activeHeld = (ctx.db
-    .prepare(
-      `SELECT COALESCE(SUM(CASE l.kind WHEN 'customer_payment' THEN l.amount_tetri ELSE -l.amount_tetri END),0) AS s
-       FROM ledger_entries l JOIN orders o ON o.id = l.order_id
-       WHERE o.status NOT IN ('completed','cancelled','refunded') AND l.kind IN ('customer_payment','refund_paid','manufacturer_payout')`,
-    )
-    .get() as { s: number }).s;
+  const nS = "COUNT(*) AS n, COALESCE(SUM(x),0) AS s";
+  const payouts = (statuses: string) =>
+    one<{ n: number; s: number }>(
+      `SELECT ${nS.replace("x", "po.payable_tetri")} FROM payouts po JOIN fulfillments f ON f.id = po.fulfillment_id JOIN orders o ON o.id = f.order_id AND o.is_test = ? WHERE po.status IN (${statuses})`,
+      t,
+    );
   return {
+    test: !!opts.test,
+    testOrders: one<{ n: number }>("SELECT COUNT(*) AS n FROM orders WHERE is_test = 1").n,
+    realOrders: one<{ n: number }>("SELECT COUNT(*) AS n FROM orders WHERE is_test = 0").n,
     received,
-    awaitingVerification: awaiting,
-    verifiedToday: one<{ s: number }>("SELECT COALESCE(SUM(amount_tetri),0) AS s FROM ledger_entries WHERE kind = 'customer_payment' AND substr(created_at,1,10) = ?", today).s,
-    allocatedToActiveOrders: activeHeld,
+    awaitingVerification: one<{ n: number; s: number }>(
+      `SELECT ${nS.replace("x", "p.reported_tetri")} FROM payments p JOIN orders o ON o.id = p.order_id AND o.is_test = ? WHERE p.status IN ('submitted','verification_pending')`,
+      t,
+    ),
+    verifiedToday: one<{ s: number }>(`SELECT COALESCE(SUM(l.amount_tetri),0) AS s FROM ${ledger} WHERE l.kind = 'customer_payment' AND substr(l.created_at,1,10) = ?`, t, today).s,
+    // Active orders: received minus what already left the bank for them.
+    allocatedToActiveOrders: one<{ s: number }>(
+      `SELECT COALESCE(SUM(CASE l.kind WHEN 'customer_payment' THEN l.amount_tetri ELSE -l.amount_tetri END),0) AS s FROM ${ledger}
+       WHERE o.status NOT IN ('completed','cancelled','refunded') AND l.kind IN ('customer_payment','refund_paid','manufacturer_payout')`,
+      t,
+    ).s,
     owedToManufacturers: payable - transferred,
-    payoutsAwaitingAuthorization: eligible,
-    payoutsInProgress: inProgress,
+    payoutsAwaitingAuthorization: payouts("'eligible'"),
+    payoutsInProgress: payouts("'authorized','transfer_initiated','transfer_failed'"),
     payoutsCompleted: transferred,
-    refundsPending,
+    refundsPending: one<{ n: number; s: number }>(
+      `SELECT ${nS.replace("x", "r.amount_tetri")} FROM refunds r JOIN orders o ON o.id = r.order_id AND o.is_test = ? WHERE r.status = 'pending'`,
+      t,
+    ),
     refundsCompleted: refundPaid,
     commission: sum("commission"),
     delivery: sum("delivery_allocation"),

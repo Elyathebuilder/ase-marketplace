@@ -28,6 +28,8 @@ import {
 export interface Ctx {
   db: DB;
   now: () => Date;
+  /** Overrides the ASE_TEST_MODE setting (tests use this). */
+  testMode?: boolean;
 }
 
 type Row = Record<string, unknown>;
@@ -83,6 +85,8 @@ export interface OrderRow {
   delivery_city: string;
   delivery_address: string;
   delivery_note: string | null;
+  delivery_email: string | null;
+  is_test: number;
   hold_kind: "hold" | "dispute" | null;
   hold_reason: string | null;
 }
@@ -278,6 +282,7 @@ export interface PlaceOrderInput {
   name: string;
   phone: string;
   address: string;
+  email?: string;
   note?: string;
 }
 
@@ -289,6 +294,8 @@ export function placeOrder(ctx: Ctx, actor: Actor | null, input: PlaceOrderInput
   const phone = cleanText(input.phone, 40);
   const address = cleanText(input.address, 300);
   const note = cleanText(input.note, 500, false) || null;
+  const email = cleanText(input.email, 200, false) || null;
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new MarketError("invalid_input", "invalid email");
   if (!Array.isArray(input.lines) || input.lines.length === 0 || input.lines.length > 100) throw new MarketError("empty_cart");
 
   // Prices and delivery are recalculated here from the catalog. Nothing from the browser is trusted.
@@ -322,10 +329,10 @@ export function placeOrder(ctx: Ctx, actor: Actor | null, input: PlaceOrderInput
     ctx.db
       .prepare(
         `INSERT INTO orders (id, number, customer_id, status, created_at, payment_deadline, goods_tetri, delivery_tetri, total_tetri,
-         commission_bps, commission_base, delivery_name, delivery_phone, delivery_city, delivery_address, delivery_note)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         commission_bps, commission_base, delivery_name, delivery_phone, delivery_city, delivery_address, delivery_note, delivery_email, is_test)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
-      .run(id, number, customer.id, "placed", now.toISOString(), deadline, goods, delivery, goods + delivery, settings.commissionBps, settings.commissionBase, name, phone, input.city, address, note);
+      .run(id, number, customer.id, "placed", now.toISOString(), deadline, goods, delivery, goods + delivery, settings.commissionBps, settings.commissionBase, name, phone, input.city, address, note, email, settings.testMode ? 1 : 0);
     history(ctx, id, "order", id, null, "placed", customer.id);
 
     for (const p of parts) {

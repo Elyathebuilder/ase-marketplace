@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Paperclip } from "lucide-react";
+import { TestTag } from "@/components/market/journey";
 import { ActionButton, ActionForm, FormNotice, ReasonAction, Status, Table, tetri } from "@/components/market/ui";
 import { getDict, href, isLang, locMaker } from "@/i18n";
 import { getManufacturer } from "@/lib/catalog";
@@ -46,7 +47,7 @@ export default async function AdminSettlements({ params, searchParams }: { param
               <tr key={r.id} className={inactive ? "opacity-60" : ""}>
                 <td className="px-3 py-2 font-semibold">{maker.name}<span className="block text-xs font-normal text-muted">{r.id}</span></td>
                 <td className="px-3 py-2">
-                  <Link href={href(lang, `/admin/orders/${r.order_id}`)} className="text-red-600 hover:underline">{r.fulfillment_id}</Link>
+                  <Link href={href(lang, `/admin/orders/${r.order_id}`)} className="text-red-600 hover:underline">{r.fulfillment_id}</Link> {r.is_test === 1 && <TestTag lang={lang} />}
                   <span className="block text-xs text-muted">{m.shipmentStatus[r.fulfillment_status]}</span>
                   {r.order_hold && <span className="chip mt-1 bg-warn-50 text-warn">{s.orderHeld}</span>}
                 </td>

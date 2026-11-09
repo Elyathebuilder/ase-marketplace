@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, ArrowLeft, Check, Clock, Info, Landmark, MapPin, Paperclip } from "lucide-react";
-import { ClearCart } from "@/components/market/ClearCart";
-import { ActionButton, ActionForm, FormNotice, SignInRequired, Status, tetri, when } from "@/components/market/ui";
+import { ArrowLeft, Clock, Info, Landmark, MapPin, Paperclip } from "lucide-react";
+import { OrderTimeline, TestBanner, TestTag } from "@/components/market/journey";
+import { ActionButton, FormNotice, SignInRequired, Status, tetri, when } from "@/components/market/ui";
 import { getDict, href, isLang, locMaker, place } from "@/i18n";
 import { getManufacturer, getProduct } from "@/lib/catalog";
 import { locProduct } from "@/i18n";
 import { currentActor } from "@/lib/market/auth";
 import { customerOrder } from "@/lib/market/queries";
 import { market } from "@/lib/market/server";
-import { ORDER_FLOW, MarketError } from "@/lib/market/types";
+import { MarketError } from "@/lib/market/types";
 import { pageLang } from "@/lib/page-lang";
 
 type Params = Promise<{ lang: string; id: string }>;
@@ -43,89 +43,34 @@ export default async function CustomerOrderPage({ params, searchParams }: { para
     if (e instanceof MarketError) notFound();
     throw e;
   }
-  const { order, shipments, payments, refunds, history, bank } = view;
+  const { order, shipments, payments, refunds, history } = view;
   const status = order.status;
-  const flowIndex = (ORDER_FLOW as readonly string[]).indexOf(status);
-  const reached = Math.max(
-    flowIndex,
-    ...history.filter((h) => h.entity === "order").map((h) => (ORDER_FLOW as readonly string[]).indexOf(h.to_status)),
-  );
-  const isException = flowIndex < 0;
   const canPay = ["awaiting_payment", "payment_rejected"].includes(status) && view.due > 0;
   const lastRejection = [...history].reverse().find((h) => h.entity === "order" && h.to_status === "payment_rejected");
   const partial = status === "awaiting_payment" && view.received > 0;
-  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="container-page max-w-5xl space-y-6 py-6 md:py-8">
-      {sp.placed === "1" && <ClearCart />}
       <Link href={href(lang, "/account/orders")} className="inline-flex items-center gap-1 text-sm font-semibold text-ink-2 hover:text-red-600">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> {o.back}
       </Link>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-extrabold md:text-3xl">{m.orders.order(order.id)}</h1>
+        {order.is_test === 1 && <TestTag lang={lang} />}
         <Status value={status} labels={m.orderStatus} />
         <span className="text-sm text-muted">{m.orders.placedOn(when(order.created_at, lang))}</span>
       </div>
-      {sp.placed === "1" && <p className="rounded-lg border border-[#c4e0cf] bg-ok-50 px-3 py-2 text-sm text-ok">{o.placedThanks}</p>}
       <FormNotice lang={lang} sp={sp} />
 
-      {/* Payment instructions */}
+      {order.is_test === 1 && <TestBanner lang={lang} />}
       {canPay && (
-        <section className="card overflow-hidden border-red-200" aria-labelledby="pay-h">
-          <div className="bg-red-50 px-4 py-3">
-            <h2 id="pay-h" className="flex items-center gap-2 text-lg font-bold text-ink">
-              <Landmark className="h-5 w-5 text-red-600" aria-hidden="true" /> {o.payTitle}
-            </h2>
-            <p className="mt-1 text-sm text-ink-2">{o.payIntro}</p>
+        <section className="card flex flex-wrap items-center gap-3 border-red-200 p-4">
+          <Landmark className="h-6 w-6 shrink-0 text-red-600" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <h2 className="font-bold">{m.pay.needed}: {tetri(view.due)}</h2>
+            <p className="text-sm text-ink-2">{status === "payment_rejected" ? `${o.rejectedTitle}. ${lastRejection?.note ?? ""}` : partial ? o.partialText(tetri(view.due)) : m.pay.neededText}</p>
           </div>
-          {status === "payment_rejected" && (
-            <p className="flex items-start gap-2 border-b border-line bg-red-50/60 px-4 py-2 text-sm text-red-700">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              <span><strong>{o.rejectedTitle}.</strong> {lastRejection?.note ? `${o.reason}: ${lastRejection.note}. ` : ""}{o.rejectedText}</span>
-            </p>
-          )}
-          {partial && (
-            <p className="border-b border-line bg-warn-50 px-4 py-2 text-sm text-warn"><strong>{o.partialTitle}.</strong> {o.partialText(tetri(view.due))}</p>
-          )}
-          <dl className="grid gap-x-6 gap-y-3 p-4 text-sm sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <dt className="text-muted">{o.amountToPay}</dt>
-              <dd className="text-2xl font-extrabold tabular-nums text-ink">{tetri(view.due)}</dd>
-            </div>
-            <div><dt className="text-muted">{o.holder}</dt><dd className="font-semibold">{bank.holder}</dd></div>
-            <div><dt className="text-muted">{o.bank}</dt><dd className="font-semibold">{bank.bank}</dd></div>
-            <div><dt className="text-muted">{o.iban}</dt><dd className="font-mono font-semibold">{bank.iban}</dd></div>
-            <div><dt className="text-muted">{o.swift}</dt><dd className="font-mono font-semibold">{bank.swift}</dd></div>
-            <div><dt className="text-muted">{o.reference}</dt><dd className="font-mono text-base font-bold text-red-700">{order.id}</dd></div>
-            {order.payment_deadline && <div><dt className="text-muted">{o.deadline}</dt><dd className="font-semibold">{when(order.payment_deadline, lang)}</dd></div>}
-          </dl>
-          <details className="border-t border-line" open={sp.error !== undefined}>
-            <summary className="btn btn-primary m-4 cursor-pointer list-none">{o.madePayment}</summary>
-            <ActionForm op="submitPayment" id={order.id} back={self} files className="space-y-3 px-4 pb-4">
-              <h3 className="font-bold">{o.formTitle}</h3>
-              <p className="flex gap-2 text-sm text-ink-2"><Info className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden="true" />{o.formIntro}</p>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div>
-                  <label className="label" htmlFor="pay-amount">{o.amount}</label>
-                  <input id="pay-amount" name="amount" required inputMode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" defaultValue={(view.due / 100).toFixed(2)} className="input" />
-                </div>
-                <div>
-                  <label className="label" htmlFor="pay-date">{o.date}</label>
-                  <input id="pay-date" name="date" type="date" required max={today} defaultValue={today} className="input" />
-                </div>
-                <div>
-                  <label className="label" htmlFor="pay-ref">{o.bankRef}</label>
-                  <input id="pay-ref" name="reference" required maxLength={100} className="input" />
-                </div>
-              </div>
-              <div>
-                <label className="label" htmlFor="pay-receipt">{o.receipt}</label>
-                <input id="pay-receipt" name="receipt" type="file" accept="application/pdf,image/png,image/jpeg" className="input" />
-              </div>
-              <button type="submit" className="btn btn-dark">{o.submit}</button>
-            </ActionForm>
-          </details>
+          <Link href={href(lang, `/account/orders/${order.id}/payment`)} className="btn btn-primary">{m.pay.go}</Link>
         </section>
       )}
 
@@ -142,37 +87,13 @@ export default async function CustomerOrderPage({ params, searchParams }: { para
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-6">
           {/* Timeline */}
-          <section className="card p-4 md:p-5">
-            <h2 className="text-base font-bold">{o.timeline}</h2>
-            <ol className="mt-4 space-y-0">
-              {ORDER_FLOW.map((step, i) => {
-                const done = i <= reached && !(isException && i > reached);
-                const current = !isException && i === flowIndex;
-                const at = [...history].reverse().find((h) => h.entity === "order" && h.to_status === step)?.at;
-                return (
-                  <li key={step} className="relative flex gap-3 pb-4 last:pb-0">
-                    {i < ORDER_FLOW.length - 1 && <span className={`absolute left-[11px] top-6 h-full w-0.5 ${i < reached ? "bg-red-600" : "bg-line"}`} aria-hidden="true" />}
-                    <span className={`relative z-10 grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold ${done ? "bg-red-600 text-white" : "border-2 border-line bg-surface text-muted"} ${current ? "ring-4 ring-red-100" : ""}`}>
-                      {done ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : i + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <p className={`text-sm ${done ? "font-semibold text-ink" : "text-muted"}`}>{m.orderStatus[step]}</p>
-                      {at && done && <p className="text-xs text-muted">{when(at, lang)}</p>}
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-            {isException && (
-              <p className="mt-4 flex items-start gap-2 rounded-lg bg-warn-50 px-3 py-2 text-sm text-warn">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                <span><strong>{m.orderStatus[status]}</strong>{history.filter((h) => h.entity === "order").at(-1)?.note ? `: ${history.filter((h) => h.entity === "order").at(-1)!.note}` : ""}</span>
-              </p>
-            )}
-            {status === "delivered" && (
-              <div className="mt-4"><ActionButton op="completeOrder" id={order.id} back={self} label={o.confirmReceived} tone="primary" /></div>
-            )}
-          </section>
+          <OrderTimeline
+            lang={lang}
+            status={status}
+            history={history.filter((h) => h.entity === "order").map((h) => ({ to: h.to_status, at: h.at }))}
+            exceptionNote={history.filter((h) => h.entity === "order").at(-1)?.note}
+          />
+          {status === "delivered" && <ActionButton op="completeOrder" id={order.id} back={self} label={o.confirmReceived} tone="primary" />}
 
           {/* Shipments */}
           <section className="space-y-3">

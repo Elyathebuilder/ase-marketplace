@@ -16,17 +16,23 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { title: getDict(isLang(lang) ? lang : "ka").market.admin.overview.title };
 }
 
-export default async function AdminOverview({ params }: { params: Params }) {
+export default async function AdminOverview({ params, searchParams }: { params: Params; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { lang, t } = await pageLang(params);
   const admin = await adminOrNull();
   if (!admin) return null;
   const a = t.market.admin;
   const o = a.overview;
-  const f = financialOverview(market(), admin);
+  const test = (await searchParams).test === "1";
+  const f = financialOverview(market(), admin, { test });
   const to = (p: string) => href(lang, p);
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-extrabold md:text-3xl">{o.title}</h1>
+      <nav className="flex flex-wrap gap-1.5 text-sm">
+        <Link href={to("/admin")} aria-current={!test ? "page" : undefined} className={`rounded-full border px-3 py-1 ${!test ? "border-ink bg-ink text-white" : "border-line bg-surface text-ink-2"}`}>{o.real} ({f.realOrders})</Link>
+        <Link href={`${to("/admin")}?test=1`} aria-current={test ? "page" : undefined} className={`rounded-full border px-3 py-1 ${test ? "border-[#d9a520] bg-warn-50 font-bold text-warn" : "border-line bg-surface text-ink-2"}`}>{o.testOrders} ({f.testOrders})</Link>
+      </nav>
+      {test && <p className="max-w-4xl rounded-lg border-2 border-dashed border-[#d9a520] bg-warn-50 px-3 py-2 text-sm font-semibold text-warn">{o.testNote}</p>}
       <p className="flex max-w-4xl items-start gap-2 rounded-lg bg-warn-50 px-3 py-2 text-sm text-warn">
         <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> {a.ledgerNote}
       </p>

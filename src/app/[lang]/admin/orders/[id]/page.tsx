@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft, Info } from "lucide-react";
+import { TestBanner, TestTag } from "@/components/market/journey";
 import { ActionButton, ActionForm, FormNotice, ReasonAction, Status, Table, tetri, when } from "@/components/market/ui";
 import { getDict, href, isLang, locMaker, place } from "@/i18n";
 import { getManufacturer } from "@/lib/catalog";
@@ -50,9 +51,11 @@ export default async function AdminOrderPage({ params, searchParams }: { params:
       </Link>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-extrabold md:text-3xl">{order.id}</h1>
+        {order.is_test === 1 && <TestTag lang={lang} />}
         <Status value={order.status} labels={m.orderStatus} />
         <span className="text-sm text-muted">{when(order.created_at, lang)}</span>
       </div>
+      {order.is_test === 1 && <TestBanner lang={lang} />}
       {order.hold_kind && (
         <p className="flex items-start gap-2 rounded-lg bg-warn-50 px-3 py-2 text-sm text-warn">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />

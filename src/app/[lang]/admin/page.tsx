@@ -49,7 +49,7 @@ export default async function AdminOverview({ params }: { params: Params }) {
             <Row label={o.verifiedToday} value={f.verifiedToday} />
             <Row label={o.allocated} value={f.allocatedToActiveOrders} />
           </dl>
-          <h3 className="mt-5 text-sm font-bold">{a.order.finance}</h3>
+          <h3 className="mt-5 text-sm font-bold">{o.breakdown}</h3>
           <dl className="mt-2 space-y-2 text-sm">
             <Row label={o.owed} value={f.owedToManufacturers} />
             <Row label={o.commission} value={f.commission} />

@@ -284,6 +284,7 @@ export const marketEn = {
       net: "Ledger net (received − transferred − refunded)",
       netHint: "Should match the money for these orders in the bank account, if every transfer was recorded.",
       count: (n: number) => `${n} item${n === 1 ? "" : "s"}`,
+      breakdown: "Where the received money belongs",
       todo: "Needs attention",
     },
     orders: {

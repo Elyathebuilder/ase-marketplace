@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: /^@\/lib\/market\/actions$/, replacement: here + "shims/actions.ts" },
+      { find: /^@\/lib\/catalog$/, replacement: here + "shims/catalog.ts" },
       { find: /^@\//, replacement: fileURLToPath(new URL("../../src/", import.meta.url)) },
       { find: /^next\/link$/, replacement: here + "shims/link.tsx" },
     ],

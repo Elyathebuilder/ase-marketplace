@@ -525,10 +525,12 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_time ON notifications(user_id,
 `;
 
 function migrate(db: DatabaseSync) {
-  const current = (db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
+  const version = () => (db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
   for (const m of MIGRATIONS) {
-    if (m.version <= current) continue;
+    if (m.version <= version()) continue;
     tx(db, () => {
+      // Another process (for example a parallel build worker) may have run it while we waited for the lock.
+      if (m.version <= version()) return;
       m.up(db);
       db.exec(`PRAGMA user_version = ${m.version}`);
     });
@@ -551,7 +553,8 @@ export function tx<T>(db: DB, fn: () => T): T {
 export function openDb(file: string): DB {
   if (file !== ":memory:") mkdirSync(path.dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
-  db.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;");
+  // Wait for other processes first, so switching to WAL or migrating never fails with "database is locked".
+  db.exec("PRAGMA busy_timeout = 10000; PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;");
   db.exec(SCHEMA);
   migrate(db);
   db.exec(TRIGGERS);

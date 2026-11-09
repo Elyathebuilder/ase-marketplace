@@ -9,16 +9,20 @@ def name_for(path):
         n+='__'+'_'.join(f'{k}-{v}' for k,v in urllib.parse.parse_qsl(p.query))
     return re.sub(r'[^A-Za-z0-9_.-]','-',n)+'.html'
 start=['/','/en','/seller','/en/seller','/cart','/en/cart','/admin/delivery','/en/admin/delivery']
-# Pages that need a server (accounts, real orders) are not copied; the preview has its own TEST journey.
-SKIP=re.compile(r'^(/en)?/(signin|account|checkout|test-order|admin(?!/delivery$))')
+# Pages that need a server (accounts, forms, real orders) are not copied; the preview has its own TEST journey.
+SKIP=re.compile(r'^(/en)?/(signin|register|forgot-password|reset-password|account|checkout|test-order|admin(?!/delivery$)|seller/(products/|orders/|quotes/))')
 SECRET=os.environ.get('ASE_SESSION_SECRET','')
-def admin_cookie():
-    payload=f"admin-tamar.{int(time.time())+3600}"
+def cookie(user):
+    # Same format as src/lib/market/auth.ts: userId.version.expiry.signature
+    payload=f"{user}.1.{int(time.time())+3600}"
     sig=base64.urlsafe_b64encode(hmac.new(SECRET.encode(),payload.encode(),hashlib.sha256).digest()).decode().rstrip('=')
     return f"ase_session={payload}.{sig}"
 def fetch(u):
     req=urllib.request.Request(BASE+u)
-    if u.endswith('/admin/delivery'): req.add_header('Cookie',admin_cookie())
+    path=urllib.parse.urlsplit(u).path
+    if path.endswith('/admin/delivery'): req.add_header('Cookie',cookie('admin-tamar'))
+    # The seller portal is shown read-only, as the demo seller sees it.
+    elif re.match(r'^(/en)?/seller', path): req.add_header('Cookie',cookie('maker-imereti-timber-works'))
     return urllib.request.urlopen(req).read().decode()
 seen={}; queue=list(start); css_cache={}; assets=set()
 while queue:
@@ -58,9 +62,19 @@ def rewrite(u, body):
     body=re.sub(r'action="(/[^"]*)"',lambda m:'action="'+name_for(m.group(1))+'"',body)
     lang='en' if u=='/en' or u.startswith('/en/') else 'ka'
     path=u[3:] or '/' if lang=='en' else u
-    inject='<script>window.__ASE='+json.dumps({'lang':lang,'path':path})+'</script><script src="islands.js" defer></script>'
+    inject='<script>window.__ASE='+json.dumps({'lang':lang,'path':path})+';window.__ASE_CATALOG_URL="catalog.json"</script><script src="islands.js" defer></script>'
     body=body.replace('</body>', inject+'</body>',1)
     return body
+# The demo catalog for the browser-only parts (cart, checkout, delivery estimates).
+slugs=sorted({m for b in seen.values() for m in re.findall(r'href="/(?:en/)?products/([a-z0-9-]+)"', b)})
+catalog={'products':[],'makers':{}}
+for i in range(0,len(slugs),100):
+    d=json.loads(urllib.request.urlopen(BASE+'/api/catalog?slugs='+','.join(slugs[i:i+100])).read())
+    catalog['products']+=d['products']
+    for m in d['makers']: catalog['makers'][m['slug']]=m
+catalog['makers']=list(catalog['makers'].values())
+open(os.path.join(OUT,'catalog.json'),'w').write(json.dumps(catalog))
+print('catalog products',len(catalog['products']))
 pages={}
 for u,b in seen.items():
     out=rewrite(u,b); pages[u]=out

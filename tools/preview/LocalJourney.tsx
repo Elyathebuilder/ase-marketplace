@@ -11,7 +11,7 @@ import { href, locMaker, locProduct } from "@/i18n";
 import { useI18n } from "@/i18n/client";
 import { clearCart } from "@/lib/cart";
 import { quoteCartDelivery } from "@/lib/cart-delivery";
-import { getManufacturer } from "@/lib/catalog";
+import { getManufacturer, previewLookup } from "./shims/catalog";
 import { TEST_BANK } from "@/lib/market/test-bank";
 import { toTetri } from "@/lib/money";
 import { toFile } from "./shims/link";
@@ -64,7 +64,7 @@ export function LocalCheckout() {
         testMode
         onPlace={(d) => {
           // Same calculation as the server: catalog prices and the delivery engine, in whole tetri.
-          const q = quoteCartDelivery(d.lines, d.city);
+          const q = quoteCartDelivery(d.lines, d.city, previewLookup);
           const shipments = q.groups.map((g) => {
             const m = locMaker(getManufacturer(g.manufacturer)!, lang);
             const s = q.delivery.shipments.find((x) => x.originId === g.manufacturer);
@@ -75,7 +75,7 @@ export function LocalCheckout() {
               city: m.city,
               status: "awaiting_payment",
               delivery: s?.status === "quoted" ? toTetri(s.price.total) : 0,
-              items: g.lines.map(({ product, qty }) => ({ key: product.slug, name: locProduct(product, lang).name, qty, line: toTetri(product.retailPrice!) * qty })),
+              items: g.lines.map(({ product, qty, unitPrice }) => ({ key: product.slug, name: locProduct(product, lang).name, qty, line: toTetri(unitPrice) * qty })),
             };
           });
           const goods = shipments.reduce((s, x) => s + x.items.reduce((a, i) => a + i.line, 0), 0);

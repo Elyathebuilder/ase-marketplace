@@ -409,3 +409,23 @@ export function adminEmails(ctx: Ctx, actor: Actor | null, limit = 200) {
   requireAdmin(actor);
   return ctx.db.prepare("SELECT * FROM email_outbox ORDER BY id DESC LIMIT ?").all(limit) as unknown as import("./mailer").OutboxRow[];
 }
+
+/**
+ * Creates the first administrator from server settings (ASE_ADMIN_EMAIL, ASE_ADMIN_PASSWORD, optional
+ * ASE_ADMIN_NAME). It never changes an existing account: if a user with that email exists, nothing
+ * happens, so the password can be removed from the settings after the first start.
+ */
+export function bootstrapAdmin(ctx: Ctx, env: Record<string, string | undefined> = process.env): string | null {
+  const password = env.ASE_ADMIN_PASSWORD ?? "";
+  if (!env.ASE_ADMIN_EMAIL || !password) return null;
+  const email = normalizeEmail(env.ASE_ADMIN_EMAIL);
+  if (ctx.db.prepare("SELECT 1 FROM users WHERE email = ?").get(email)) return null;
+  validatePassword(password, password);
+  const name = cleanName(env.ASE_ADMIN_NAME || "ASE admin");
+  const id = `adm-${randomUUID()}`;
+  const at = ctx.now().toISOString();
+  ctx.db
+    .prepare("INSERT INTO users (id, role, name, first_name, email, password_hash, email_verified_at, created_at) VALUES (?,?,?,?,?,?,?,?)")
+    .run(id, "admin", name, name, email, hashPassword(password), at, at);
+  return id;
+}

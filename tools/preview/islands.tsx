@@ -12,7 +12,7 @@ import { DeliveryEstimator } from "@/components/DeliveryEstimator";
 import { PurchasePanel } from "@/components/PurchasePanel";
 import { I18nProvider } from "@/i18n/client";
 import type { Lang } from "@/i18n/config";
-import { getProduct, manufacturerOf } from "@/lib/catalog";
+import { getAllProducts, getManufacturers, getProduct, manufacturerOf, setCatalog } from "./shims/catalog";
 import { LocalCheckout, LocalOrderPage } from "./LocalJourney";
 
 declare global {
@@ -32,9 +32,10 @@ function mount(selector: string, node: ReactNode) {
   });
 }
 
+function start() {
 mount('[data-island="cart-button"]', <CartButton />);
 mount('[data-island="cart"]', <CartView />);
-mount('[data-island="admin-delivery"]', <DeliveryCalculator />);
+mount('[data-island="admin-delivery"]', <DeliveryCalculator products={getAllProducts()} makers={Object.fromEntries(getManufacturers().map((m) => [m.slug, m]))} />);
 
 const slug = ctx.path.match(/^\/products\/([^/?#]+)$/)?.[1];
 const p = slug ? getProduct(slug) : undefined;
@@ -58,6 +59,10 @@ if (p) {
       moq={p.moq}
       stock={p.stock}
       tiers={p.wholesale?.tiers ?? []}
+      quoteOnly={p.wholesale?.quoteOnly ?? true}
+      variants={p.variants}
+      colors={p.colors}
+      available={p.available !== false}
     />,
   );
 }
@@ -69,3 +74,11 @@ mount('[data-island="local-order"]', <LocalOrderPage />);
 // No accounts on the static preview: hide the sign-in link and the admin menu.
 mount('[data-island="account"]', <></>);
 mount('[data-island="admin-nav"]', <></>);
+}
+
+// The demo catalog is a file next to the pages (no server); load it, then mount the islands.
+fetch("catalog.json")
+  .then((r) => r.json())
+  .then((d) => setCatalog(d))
+  .catch(() => {})
+  .finally(start);

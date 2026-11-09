@@ -2,13 +2,13 @@
 
 ## Where we stopped (9 November 2026)
 
-Latest work: the full customer purchase journey in TEST mode (basket, checkout with contact and delivery details, payment page with bank-transfer instructions, payment notification, confirmation, tracking). Before this, checkout could not be reached on the published preview. 57 tests pass.
+Latest work: registration and accounts for customers and sellers (email confirmation, password reset, profile, addresses), the seller application with 8 statuses and admin review, the two seller portals (Store and Orders), product management with wholesale price tiers, colours and choices, order messages between sellers and Amartani, the separate Verified Manufacturer badge with a manual inspection, admin pages for sellers, badges, products, accounts and emails, and the Supabase migration with row-level security. 64 unit tests pass; the browser test of the 21 steps passes on desktop, with phone layouts checked. The full report is in `docs/REPORT-accounts-sellers.md`.
 
 **Next session, in this order:**
-1. Owner tries the TEST purchase journey on the preview site, then the full workflow locally by signing in at `/signin` as each role.
-2. Owner gives Amartani's real bank details, commission rate and payment deadline (editable in Admin → Settings).
-3. Native Georgian speaker reviews `src/i18n/ka.ts`, `src/i18n/market-ka.ts` and `src/i18n/data-ka.ts`.
-4. Phase 2: move the demo database to Supabase (`supabase/migrations/0001_orders_payments.sql`) and real sign-in; receipts to private Supabase Storage.
+1. Owner creates a Resend account, verifies the sending domain and gives `RESEND_API_KEY` and `MAIL_FROM`.
+2. Owner chooses hosting (a small server with a disk for the database and uploads) and sets the server settings listed in the README.
+3. Native Georgian speaker reviews `src/i18n/*-ka.ts`.
+4. Move to Supabase when the owner wants it (`supabase/migrations/0001` and `0002`, checked locally with `supabase/tests/rls_check.sql`).
 5. Answer the open decisions below.
 
 ## What exists
@@ -30,18 +30,23 @@ Latest work: the full customer purchase journey in TEST mode (basket, checkout w
 | TEST mode (`ASE_TEST_MODE`, on unless set to `0`): orders flagged TEST everywhere, placeholder bank details instead of real ones, admin overview keeps real and TEST money apart; never changeable from the admin pages | Done |
 | Static preview: the same journey runs in the browser only, with TEST orders kept in localStorage (`tools/preview`) | Done |
 | Languages: Georgian default at plain URLs, English under `/en`, "ქართული \| English" switcher; all UI and demo catalog translated | Done (needs native review) |
-| Seller portal preview: dashboard, orders, quotations, products, finances, company profile (demo data, nothing saved) | Done (UI only) |
+| Seller quotations | Preview only (B2B RFQ phase) |
 | Orders and bank-transfer payments: checkout, bank details, "I have made the payment" with receipt, admin verification (confirm, partial, incorrect amount, reject, ask for the rest) | Done (demo database) |
 | Order timeline for customers, one shipment per manufacturer, full status history (who, when, why) | Done (demo database) |
 | Manufacturer side: own orders only, accept / reject / preparing / ready, expected payout and commission | Done (demo database) |
 | Settlements: payout eligible after collection and inspection, authorize, record transfer with reference and confirmation, complete, fail, hold | Done (demo database) |
 | Append-only ledger, reversals instead of edits, cancellations, refunds, holds and disputes, financial overview | Done (demo database) |
-| In-app notifications (bell in header). No email/SMS yet | Done |
+| In-app notifications (bell in header) and emails through Resend once its key is set; no SMS | Done |
 | Admin settings: commission (5% default, products or products + delivery), payment deadline, Amartani bank details | Done |
-| Demo sign-in with roles; admin pages need an admin | Done (demo; Supabase Auth in Phase 2) |
+| Accounts: customer and seller registration, email confirmation, sign-in, password reset, profile, addresses, suspension | Done |
+| Seller application (company or independent maker), 8 statuses, admin review with reasons, messages and internal notes | Done |
+| Seller portals: Store (overview, products with tiers and images, store profile, badge, application) and Orders (orders, finances) | Done |
+| Verified Manufacturer badge: request, scheduled inspection, scale-appropriate checklist, decision; never automatic | Done |
+| Admin: sellers, badges, product moderation (optional), accounts, email outbox | Done |
+| Supabase migration with row-level security for all of the above | Done (not yet deployed) |
 | Responsive: phone, tablet, desktop | Done |
 
-Buttons that need later phases are visibly switched off or labelled as preview (RFQ send, seller quotes/products/company saves).
+Buttons that need later phases are visibly switched off or labelled as preview (RFQ send, seller quotations).
 Rental features: none exist in ASE (they belong to the separate amartani-properties project).
 
 ## Architecture
@@ -54,8 +59,8 @@ Rental features: none exist in ASE (they belong to the separate amartani-propert
 ## Phases
 
 1. ✅ Foundation: public marketplace on demo data
-2. Accounts and roles (Supabase Auth): buyer, manufacturer, admin; database schema and migrations
-3. Manufacturer portal: company profile, products, images, stock, approval
+2. ✅ Accounts and roles: buyer, manufacturer, admin; database schema and migrations (Supabase move pending)
+3. ✅ Manufacturer portal: company profile, products, images, stock, approval, Verified badge
 4. B2B: RFQ storage, manufacturer quotations, messaging, accept → order
 5. B2C orders: cart, checkout, one shipment per manufacturer, order tracking, notifications
 6. Delivery engine wiring: real distances, delivery time choice, admin settings
@@ -76,7 +81,7 @@ Rental features: none exist in ASE (they belong to the separate amartani-propert
 | 7 | Georgian text review by a native speaker; add Russian later? | Before launch | Georgian is the default; English is second |
 | 8 | Brand name and logo | Before launch | "ASE" with a red cross mark is a placeholder; payment pages say "Amartani" |
 | 9 | Amartani's real bank account, payment deadline, and legal review of holding customer money before paying manufacturers | Before launch | The demo IBAN is fake. The ledger is internal bookkeeping, not escrow |
-| 10 | Email notifications (which provider) | Phase 5 | Only in-app notifications exist; no paid SMS/WhatsApp without your approval |
+| 10 | Email provider account (Resend recommended: free up to 3,000 emails a month) | Before launch | Emails wait in the outbox until the key is set; no paid SMS/WhatsApp without your approval |
 
 ## Notes on the interaction-logic document
 

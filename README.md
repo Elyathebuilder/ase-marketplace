@@ -2,7 +2,7 @@
 
 "You manufacture. We sell." A B2C + B2B marketplace for products physically made in Georgia.
 
-**Status: Phase 1 plus the order, payment and settlement workflow on a built-in demo database.** All data is demo data. Payments are ordinary bank transfers that an administrator verifies by hand; there are no card payments, payment gateways or automatic bank connections.
+**Status: shop, accounts, seller applications and portals, the Verified Manufacturer badge, and the order, payment and settlement workflow, on a built-in database (SQLite).** Demo data is added unless `ASE_SEED_DEMO=0`. Payments are ordinary bank transfers that an administrator verifies by hand; there are no card payments, payment gateways or automatic bank connections.
 
 ## Run it
 
@@ -11,8 +11,9 @@ Needs Node.js 22.13 or newer (it uses Node's built-in SQLite for the demo databa
 ```bash
 npm install
 npm run dev      # open http://localhost:3000
-npm test         # delivery engine, cart, translations and the order/payment/settlement workflow
+npm test         # delivery, cart, translations, orders/payments, accounts, sellers, badge (vitest)
 npm run build    # production build
+npm run e2e      # browser test of the 21 steps against a running app (see tests/e2e/journey.mjs)
 ```
 
 ## What's where
@@ -32,9 +33,21 @@ src/lib/market/          Orders, bank-transfer payments, settlements, ledger, no
   service.ts             The workflow; every action checks the signed-in role on the server
   queries.ts             What each role may read
   settings.ts            Commission (default 5%) and Amartani bank details, editable by admins
-  auth.ts                Demo sign-in (signed cookie); replaced by Supabase Auth in Phase 2
-  market.test.ts         Workflow tests
+  auth.ts                Sign-in session (signed, httpOnly cookie)
+  accounts.ts            Registration, email confirmation, password reset, profiles, addresses, first admin
+  sellers.ts             Seller application, the 8 account statuses, admin decisions, messages, files
+  badge.ts               Verified Manufacturer badge: request, inspection checklist, decision (never automatic)
+  products.ts            Seller products, price tiers, images, publishing, moderation
+  catalog-store.ts       Public catalogue (approved sellers' published products), cached in memory
+  mailer.ts              Email outbox; sends through Resend only when RESEND_API_KEY and MAIL_FROM are set
+  seller-actions.ts      Server actions of the seller portal and admin seller pages
+  market.test.ts, sellers.test.ts   Workflow tests
+src/app/[lang]/seller/   Seller portal: Store (overview, products, store profile, badge, application)
+                         and Orders (orders, finances, quotes preview)
+src/app/[lang]/admin/    Admin: sellers, badges, products, accounts, emails, orders, payments, settlements
+tests/e2e/journey.mjs    Browser test: customers, two sellers, admin, purchase, payment, statuses, isolation
 supabase/migrations/     The same schema for Postgres, with row level security policies
+supabase/tests/          Local check of those policies on plain Postgres (rls_check.sql)
 docs/PLAN.md             Implementation plan, phases and open decisions
 ```
 
@@ -48,9 +61,29 @@ Customer: basket → checkout (a one-click demo sign-in appears there) → payme
 transfer details → confirmation → order tracking.
 Manufacturer: `/seller/orders` and `/seller/finances` show only that manufacturer's part.
 Admin: `/admin` (overview, orders, payments, settlements, refunds, settings).
-Delete the `data/` folder to start again with fresh demo orders. Environment variables:
-`ASE_SESSION_SECRET` (cookie signing secret), `ASE_DB_PATH`, `ASE_SEED_DEMO=0` (no demo orders),
-`ASE_TEST_MODE=0` (switch TEST mode off; it is on by default).
+Delete the `data/` folder to start again with fresh demo orders.
+
+## Server settings (environment variables)
+
+| Name | What it does |
+| --- | --- |
+| `ASE_SESSION_SECRET` | Signs sign-in cookies. Required on the live site: a long random string, kept secret. |
+| `ASE_BASE_URL` | The site address used in email links, e.g. `https://ase.ge`. |
+| `ASE_ADMIN_EMAIL`, `ASE_ADMIN_PASSWORD`, `ASE_ADMIN_NAME` | Create the first administrator on start if no account has that email. Never changes an existing account; remove the password after the first start. |
+| `RESEND_API_KEY`, `MAIL_FROM` | Send emails through Resend (e.g. `MAIL_FROM="Amartani <no-reply@ase.ge>"`). Without them emails are kept in the outbox, marked "not sent", and shown at `/admin/emails`. |
+| `ASE_DB_PATH`, `ASE_UPLOAD_DIR` | Where the database and uploaded files live (default `data/`). Back both up. |
+| `ASE_SEED_DEMO=0` | No demo accounts, sellers, products or orders (use this on the live site). |
+| `ASE_TEST_MODE=0` | Switch TEST mode off (it is on by default). |
+
+## Accounts and sellers
+
+Customers register at `/register/customer` and must confirm their email before ordering; the basket is kept.
+Sellers register at `/register/seller` as a registered company or an independent maker, then fill in a
+5-step application (business, location and contact, documents and photos, review) and send it.
+An administrator reviews it at `/admin/sellers` and approves it as a company or an independent maker,
+asks for more information, rejects, suspends or reactivates; every decision is stored with its reason.
+Only approved sellers' published products are public. The "Verified Manufacturer" badge is separate:
+the seller asks for it, an administrator schedules and records an inspection, and only then can award it.
 
 **TEST mode.** New orders are marked TEST, show placeholder bank details ("do not transfer money") instead of
 Amartani's real account, and are counted apart from real orders in the admin overview. A test payment

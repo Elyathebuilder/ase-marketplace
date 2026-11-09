@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Factory } from "lucide-react";
 import { getDict, href, type Lang } from "@/i18n";
 import { CartButton } from "./cart/CartButton";
+import { AccountMenu } from "./market/AccountMenu";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
 import { MobileMenu } from "./MobileMenu";
@@ -20,6 +21,7 @@ export function SiteHeader({ lang }: { lang: Lang }) {
         </div>
         <div className="ml-auto flex items-center gap-1 md:ml-0">
           <Link href={href(lang, "/b2b#rfq")} className="btn btn-ghost hidden text-sm xl:inline-flex">{t.header.requestQuote}</Link>
+          <AccountMenu />
           <CartButton />
           <Link href={href(lang, "/about#sell")} className="btn btn-dark px-3.5 text-sm">
             <Factory className="h-4 w-4" aria-hidden="true" />

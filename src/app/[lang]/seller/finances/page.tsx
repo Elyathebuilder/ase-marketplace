@@ -7,6 +7,8 @@ import { formatGel } from "@/lib/format";
 import { DEMO_COMMISSION_RATE, DEMO_PAYOUTS, demoOrders, orderTotals } from "@/lib/seller-demo";
 import { formatDate, getDict, href, isLang } from "@/i18n";
 import { pageLang } from "@/lib/page-lang";
+import { LiveFinance } from "@/components/market/maker";
+import { currentActor } from "@/lib/market/auth";
 
 type Params = Promise<{ lang: string }>;
 
@@ -17,6 +19,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function FinancesPage({ params }: { params: Params }) {
   const { lang, t: dict } = await pageLang(params);
+  const actor = await currentActor();
+  if (actor?.role === "manufacturer") return <LiveFinance actor={actor} lang={lang} />;
   const f = dict.seller.finances;
   const sales = demoOrders()
     .filter((o) => ["delivered", "dispatched"].includes(o.status))

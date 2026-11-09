@@ -1,14 +1,15 @@
 # ASE implementation plan
 
-## Where we stopped (8 November 2026)
+## Where we stopped (9 November 2026)
 
-Latest work: Georgian became the default language, delivery now depends on the customer's city, and the cart groups orders by manufacturer. Everything is pushed to `main`, and 32 tests pass.
+Latest work: the order, bank-transfer payment, order tracking and manufacturer settlement workflow, on a built-in demo database with demo sign-in (customer, manufacturer, admin). 55 tests pass.
 
 **Next session, in this order:**
-1. Owner reviews the updated preview (Georgian default, delivery estimate, cart, seller portal).
-2. Native Georgian speaker reviews `src/i18n/ka.ts` and `src/i18n/data-ka.ts`.
-3. Start Phase 2: accounts and roles (Supabase), database schema. The admin delivery page gets admin-only access here.
-4. Answer the open decisions below, especially map service and delivery rates.
+1. Owner tries the workflow: sign in at `/signin` as each role (run the app locally; the static preview can't save orders).
+2. Owner gives Amartani's real bank details, commission rate and payment deadline (editable in Admin → Settings).
+3. Native Georgian speaker reviews `src/i18n/ka.ts`, `src/i18n/market-ka.ts` and `src/i18n/data-ka.ts`.
+4. Phase 2: move the demo database to Supabase (`supabase/migrations/0001_orders_payments.sql`) and real sign-in; receipts to private Supabase Storage.
+5. Answer the open decisions below.
 
 ## What exists
 
@@ -27,9 +28,17 @@ Latest work: Georgian became the default language, delivery now depends on the c
 | Cart (kept in the browser): one shipment per manufacturer, combined delivery total; checkout switched off | Done (preview) |
 | Languages: Georgian default at plain URLs, English under `/en`, "ქართული \| English" switcher; all UI and demo catalog translated | Done (needs native review) |
 | Seller portal preview: dashboard, orders, quotations, products, finances, company profile (demo data, nothing saved) | Done (UI only) |
+| Orders and bank-transfer payments: checkout, bank details, "I have made the payment" with receipt, admin verification (confirm, partial, incorrect amount, reject, ask for the rest) | Done (demo database) |
+| Order timeline for customers, one shipment per manufacturer, full status history (who, when, why) | Done (demo database) |
+| Manufacturer side: own orders only, accept / reject / preparing / ready, expected payout and commission | Done (demo database) |
+| Settlements: payout eligible after collection and inspection, authorize, record transfer with reference and confirmation, complete, fail, hold | Done (demo database) |
+| Append-only ledger, reversals instead of edits, cancellations, refunds, holds and disputes, financial overview | Done (demo database) |
+| In-app notifications (bell in header). No email/SMS yet | Done |
+| Admin settings: commission (5% default, products or products + delivery), payment deadline, Amartani bank details | Done |
+| Demo sign-in with roles; admin pages need an admin | Done (demo; Supabase Auth in Phase 2) |
 | Responsive: phone, tablet, desktop | Done |
 
-Buttons that need later phases are visibly switched off or labelled as preview (checkout, RFQ send, seller portal saves).
+Buttons that need later phases are visibly switched off or labelled as preview (RFQ send, seller quotes/products/company saves).
 Rental features: none exist in ASE (they belong to the separate amartani-properties project).
 
 ## Architecture
@@ -57,12 +66,14 @@ Rental features: none exist in ASE (they belong to the separate amartani-propert
 | 1 | ~~Where the code lives~~ | Decided | github.com/Elyathebuilder/ase-marketplace |
 | 2 | Map / distance service (Google Maps, Mapbox, or other) | Phase 5 | Today distance is approximate (straight line × 1.3 between city centres). A map service gives real road distance to the exact address |
 | 3 | Payment provider for marketplace split payments (e.g. a Georgian bank's marketplace product) | Phase 8 | No money is held by ASE itself until this is settled legally |
-| 4 | Commission % (one rate, or per category) | Phase 7 | The seller portal shows 10% only as an example |
+| 4 | Commission % (one rate, or per category) | Before launch | Default 5% of the product subtotal, editable in Admin → Settings. Per-category rates not built |
 | 4b | Delivery rates: confirm Scooter 0/0.60/5, Car 0/0.60/10, Van 20/1.50/20, Truck 50/2.50/40 (base / per km / space fee) and vehicle sizes; minimum charge? | Phase 6 | Long trips are expensive for small items (one paint bucket Tbilisi → Batumi ≈ 212 ₾) |
 | 5 | Delivery time options: "as soon as possible" vs set day and time window. Does a set time cost extra? | Phase 5 | From the interaction-logic document |
 | 6 | Who delivers: ASE's own couriers or partner transport companies | Phase 5 | Affects vehicle capacities and rates |
 | 7 | Georgian text review by a native speaker; add Russian later? | Before launch | Georgian is the default; English is second |
-| 8 | Brand name and logo | Before launch | "ASE" with a red cross mark is a placeholder |
+| 8 | Brand name and logo | Before launch | "ASE" with a red cross mark is a placeholder; payment pages say "Amartani" |
+| 9 | Amartani's real bank account, payment deadline, and legal review of holding customer money before paying manufacturers | Before launch | The demo IBAN is fake. The ledger is internal bookkeeping, not escrow |
+| 10 | Email notifications (which provider) | Phase 5 | Only in-app notifications exist; no paid SMS/WhatsApp without your approval |
 
 ## Notes on the interaction-logic document
 

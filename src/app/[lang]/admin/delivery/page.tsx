@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { ShieldAlert } from "lucide-react";
 import { DeliveryCalculator } from "@/components/admin/DeliveryCalculator";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Logo } from "@/components/Logo";
 import { getDict, isLang } from "@/i18n";
 import { DEFAULT_DELIVERY_SETTINGS } from "@/lib/delivery";
 import { formatGel } from "@/lib/format";
 import { pageLang } from "@/lib/page-lang";
+import { adminOrNull } from "@/lib/market/auth";
 
 type Params = Promise<{ lang: string }>;
 
@@ -17,28 +15,17 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 /**
  * Internal page for ASE staff: the full delivery calculation and the rate table.
- * Customers only ever see the final estimate. Access control comes with accounts and roles.
+ * Customers only ever see the final estimate. Only administrators can open it (see admin/layout.tsx).
  */
 export default async function AdminDeliveryPage({ params }: { params: Params }) {
-  const { lang, t } = await pageLang(params);
+  const { t } = await pageLang(params);
+  if (!(await adminOrNull())) return null;
   const a = t.admin;
   return (
-    <div className="min-h-dvh bg-paper">
-      <header className="border-b border-line bg-surface">
-        <div className="container-page flex items-center gap-3 py-3">
-          <Logo lang={lang} />
-          <span className="rounded-md bg-ink px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-white">Admin</span>
-          <LanguageSwitcher className="ml-auto" />
-        </div>
-      </header>
-      <main id="main" className="container-page space-y-6 py-6 md:py-8">
+    <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-extrabold md:text-3xl">{a.title}</h1>
           <p className="mt-1 max-w-3xl text-sm text-ink-2">{a.intro}</p>
-          <p className="mt-2 inline-flex items-start gap-2 rounded-lg bg-warn-50 px-3 py-2 text-xs text-warn">
-            <ShieldAlert className="mt-px h-4 w-4 shrink-0" aria-hidden="true" />
-            {a.accessNote}
-          </p>
         </div>
 
         <DeliveryCalculator />
@@ -73,7 +60,6 @@ export default async function AdminDeliveryPage({ params }: { params: Params }) 
           </div>
           <p className="mt-2 text-xs text-muted">= {a.baseFee} + km × {a.perKm} + max(weight %, volume %) × {a.space100}</p>
         </section>
-      </main>
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { formatGel } from "@/lib/format";
 import { ORDER_STATUS, demoOrders, orderTotals, type OrderStatus } from "@/lib/seller-demo";
 import { formatDate, getDict, href, isLang, locProduct, place } from "@/i18n";
 import { pageLang } from "@/lib/page-lang";
+import { LiveOrders } from "@/components/market/maker";
+import { currentActor } from "@/lib/market/auth";
 
 type Params = Promise<{ lang: string }>;
 
@@ -27,6 +29,8 @@ const TABS: { key: TabKey; match: (s: OrderStatus) => boolean }[] = [
 
 export default async function OrdersPage({ params, searchParams }: { params: Params; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { lang, t: dict } = await pageLang(params);
+  const actor = await currentActor();
+  if (actor?.role === "manufacturer") return <LiveOrders actor={actor} lang={lang} />;
   const s = dict.seller.orders;
   const raw = (await searchParams).status;
   const key = typeof raw === "string" && TABS.some((x) => x.key === raw) ? raw : "all";
@@ -38,6 +42,10 @@ export default async function OrdersPage({ params, searchParams }: { params: Par
     <div>
       <h1 className="text-2xl font-extrabold">{s.title}</h1>
       <p className="mt-1 text-sm text-muted">{s.intro}</p>
+      <p className="mt-3 rounded-lg bg-warn-50 px-3 py-2 text-sm text-warn">
+        {dict.market.maker.demoHint}{" "}
+        <Link href={href(lang, "/signin")} className="font-semibold underline">{dict.market.account.signIn}</Link>
+      </p>
 
       <nav aria-label={s.tabsLabel} className="mt-5 border-b border-line">
         <ul className="scroll-row auto-cols-max gap-0">

@@ -122,9 +122,15 @@ export function CartView() {
             <dd className="tabular-nums" data-cart-total>{formatGel(quote.total)}</dd>
           </div>
         </dl>
-        <button type="button" className="btn btn-primary mt-4 w-full py-3" disabled aria-describedby="checkout-note">
-          {c.checkout}
-        </button>
+        {quote.delivery.requiresManualQuote ? (
+          <button type="button" className="btn btn-primary mt-4 w-full py-3" disabled aria-describedby="checkout-note">
+            {c.checkout}
+          </button>
+        ) : (
+          <Link href={`${href(lang, "/checkout")}?city=${encodeURIComponent(to)}`} className="btn btn-primary mt-4 w-full py-3" aria-describedby="checkout-note">
+            {c.checkout}
+          </Link>
+        )}
         <p id="checkout-note" className="mt-2 text-xs text-muted">{c.checkoutNote}</p>
       </aside>
     </div>

@@ -1,3 +1,5 @@
+import { marketEn } from "./market-en";
+
 /** English UI text. Georgian (ka.ts) has the same shape and is the default language. */
 export const en = {
   meta: {
@@ -24,7 +26,7 @@ export const en = {
   },
   demo: {
     banner: "Preview",
-    text: "All manufacturers, products and prices on this site are demo data. Ordering and payments are not live yet.",
+    text: "All manufacturers, products, prices and bank details on this site are demo data. Don't send real money.",
   },
   nav: {
     home: "Home",
@@ -286,7 +288,7 @@ export const en = {
     total: "Estimated total",
     toConfirm: "to be confirmed",
     checkout: "Go to checkout",
-    checkoutNote: "Online checkout and payment open in a later phase. Nothing is charged in this preview.",
+    checkoutNote: "You pay by ordinary bank transfer after placing the order. No card is charged.",
     separateNote: "Products from different manufacturers travel separately, so each shipment has its own delivery price. You pay one combined amount.",
   },
   maker: {
@@ -693,6 +695,7 @@ export const en = {
     customerSees: "The customer sees only",
     vehicleNames: {} as Record<string, string>,
   },
+  market: marketEn,
 };
 
 type Widen<T> = T extends string

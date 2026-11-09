@@ -22,10 +22,12 @@ export function proxy(request: NextRequest) {
   return NextResponse.rewrite(url, { request: { headers: withLang(request, "ka") } });
 }
 
-/** Tells pages without route params (the 404 page) which language to use. */
+/** Tells pages without route params (the 404 page) which language to use, and which path was asked for. */
 function withLang(request: NextRequest, lang: "ka" | "en") {
   const headers = new Headers(request.headers);
   headers.set("x-ase-lang", lang);
+  // The visitor's own path, so a sign-in page can send them back to it.
+  headers.set("x-ase-path", request.nextUrl.pathname);
   return headers;
 }
 

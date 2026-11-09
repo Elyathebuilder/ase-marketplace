@@ -7,6 +7,9 @@ import { SellerNav } from "@/components/seller/SellerNav";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { demoSeller } from "@/lib/seller-demo";
+import { getManufacturer } from "@/lib/catalog";
+import { signOut } from "@/lib/market/actions";
+import { currentActor } from "@/lib/market/auth";
 import { getDict, href, isLang, locMaker } from "@/i18n";
 import { pageLang } from "@/lib/page-lang";
 
@@ -21,13 +24,24 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 export default async function SellerLayout({ children, params }: { children: React.ReactNode; params: Params }) {
   const { lang, t } = await pageLang(params);
   const s = t.seller;
-  const raw = demoSeller();
+  const actor = await currentActor();
+  const live = actor?.role === "manufacturer" && actor.manufacturerSlug ? getManufacturer(actor.manufacturerSlug) : undefined;
+  const raw = live ?? demoSeller();
   const m = locMaker(raw, lang);
   return (
     <div className="flex min-h-dvh flex-col bg-paper">
       <div className="bg-red-600 text-center text-xs text-white">
         <p className="container-page py-1.5">
-          <span className="font-bold">{s.banner}</span> {s.bannerText}
+          {live ? (
+            <>
+              <span className="font-bold">{t.market.maker.liveBanner}</span> {t.market.maker.liveBannerText}
+            </>
+          ) : (
+            <>
+              <span className="font-bold">{s.banner}</span> {s.bannerText}{" "}
+              <Link href={href(lang, "/signin")} className="font-semibold underline">{t.market.account.signIn}</Link>
+            </>
+          )}
         </p>
       </div>
       <header className="border-b border-line bg-surface">
@@ -43,7 +57,14 @@ export default async function SellerLayout({ children, params }: { children: Rea
               <ManufacturerLogo m={raw} size="sm" />
               <div className="hidden leading-tight md:block">
                 <p className="text-sm font-semibold text-ink">{m.name}</p>
-                <p className="text-xs text-muted">{s.demoAccount}</p>
+                {live ? (
+                  <form action={signOut}>
+                    <input type="hidden" name="back" value={href(lang, "/seller")} />
+                    <button type="submit" className="text-xs text-muted hover:text-red-600 hover:underline">{t.market.account.signOut}</button>
+                  </form>
+                ) : (
+                  <p className="text-xs text-muted">{s.demoAccount}</p>
+                )}
               </div>
             </div>
           </div>

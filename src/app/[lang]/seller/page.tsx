@@ -16,9 +16,25 @@ import {
 } from "@/lib/seller-demo";
 import { href, locMaker, locProduct, place } from "@/i18n";
 import { pageLang } from "@/lib/page-lang";
+import { LiveDashboard } from "@/components/market/maker";
+import { currentActor } from "@/lib/market/auth";
+import { getManufacturer } from "@/lib/catalog";
 
 export default async function SellerDashboard({ params }: { params: Promise<{ lang: string }> }) {
   const { lang, t } = await pageLang(params);
+  const actor = await currentActor();
+  if (actor?.role === "manufacturer" && actor.manufacturerSlug) {
+    const me = locMaker(getManufacturer(actor.manufacturerSlug)!, lang);
+    return (
+      <div className="space-y-6">
+        <div>
+          <p className="text-sm text-muted">{t.seller.dash.hello}</p>
+          <h1 className="text-2xl font-extrabold md:text-3xl">{me.name}</h1>
+        </div>
+        <LiveDashboard actor={actor} lang={lang} />
+      </div>
+    );
+  }
   const d = t.seller.dash;
   const to = (p: string) => href(lang, p);
   const m = locMaker(demoSeller(), lang);

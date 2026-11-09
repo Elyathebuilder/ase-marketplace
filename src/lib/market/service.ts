@@ -246,6 +246,7 @@ const STAGE: Partial<Record<FulfillmentStatus, OrderStatus>> = {
   new: "payment_confirmed",
   accepted: "payment_confirmed",
   preparing: "preparing",
+  in_progress: "preparing",
   ready: "ready",
   collected: "collected",
   in_delivery: "in_delivery",
@@ -552,24 +553,85 @@ function ownFulfillment(ctx: Ctx, actor: Actor | null, fulfillmentId: string) {
   return { maker, f, order };
 }
 
-const MAKER_STEPS: Record<"accept" | "prepare" | "ready", { from: FulfillmentStatus[]; to: FulfillmentStatus; notice: string }> = {
+/**
+ * The steps a seller may take on its own part of an order. Everything about money, collection and
+ * delivery is for the administrator only (see ADMIN_STEPS and the payment functions).
+ */
+const MAKER_STEPS: Record<"accept" | "prepare" | "progress" | "ready", { from: FulfillmentStatus[]; to: FulfillmentStatus; notice: string }> = {
   accept: { from: ["new"], to: "accepted", notice: "fulfillment_accepted" },
   prepare: { from: ["accepted"], to: "preparing", notice: "fulfillment_preparing" },
-  ready: { from: ["preparing"], to: "ready", notice: "fulfillment_ready" },
+  progress: { from: ["preparing"], to: "in_progress", notice: "fulfillment_in_progress" },
+  ready: { from: ["preparing", "in_progress"], to: "ready", notice: "fulfillment_ready" },
 };
+export type MakerStep = keyof typeof MAKER_STEPS;
 
-export function manufacturerStep(ctx: Ctx, actor: Actor | null, fulfillmentId: string, step: keyof typeof MAKER_STEPS) {
+export function manufacturerStep(ctx: Ctx, actor: Actor | null, fulfillmentId: string, step: MakerStep, comment?: string | null) {
   const { maker, f, order } = ownFulfillment(ctx, actor, fulfillmentId);
-  const rule = MAKER_STEPS[step];
+  const rule = Object.hasOwn(MAKER_STEPS, step) ? MAKER_STEPS[step] : undefined;
   if (!rule) throw new MarketError("invalid_input");
   if (!rule.from.includes(f.status)) throw new MarketError("invalid_state");
+  const note = cleanText(comment, 500, false) || null;
   tx(ctx.db, () => {
-    setFulfillmentStatus(ctx, f, rule.to, maker.id);
+    setFulfillmentStatus(ctx, f, rule.to, maker.id, note);
     notify(ctx, order.customer_id, rule.notice, { orderId: order.id, fulfillmentId: f.id, params: { maker: f.manufacturer_slug } });
     if (step === "ready") notifyAdmins(ctx, "admin_ready_for_collection", { orderId: order.id, fulfillmentId: f.id, params: { maker: f.manufacturer_slug } });
     syncOrderStatus(ctx, order, maker.id);
   });
 }
+
+/* ------------------------------------------------------------------ */
+/* Order messages between the seller and Amartani                        */
+/* ------------------------------------------------------------------ */
+
+export const ORDER_MESSAGE_KINDS = ["comment", "question", "issue", "delay"] as const;
+export type OrderMessageKind = (typeof ORDER_MESSAGE_KINDS)[number];
+
+export interface OrderMessageRow {
+  id: number;
+  order_id: string;
+  fulfillment_id: string;
+  author_id: string;
+  author_role: "manufacturer" | "admin";
+  kind: OrderMessageKind;
+  body: string;
+  at: string;
+}
+
+/**
+ * A message on one seller's part of an order. The seller writes on its own shipment only; the
+ * administrator on any. The other side is notified. Messages are kept for good (append-only) and
+ * are never shown to the customer. Internal admin notes stay in `notes`, which sellers never see.
+ */
+export function addOrderMessage(ctx: Ctx, actor: Actor | null, fulfillmentId: string, kind: string, body: string) {
+  if (!actor || (actor.role !== "manufacturer" && actor.role !== "admin")) throw new MarketError("forbidden");
+  const k = (ORDER_MESSAGE_KINDS as readonly string[]).includes(kind) ? (kind as OrderMessageKind) : "comment";
+  const text = cleanText(body, 2000);
+  let f: FulfillmentRow;
+  let order: OrderRow;
+  if (actor.role === "manufacturer") {
+    // ownFulfillment refuses cancelled orders; questions about those still need to reach Amartani.
+    if (!actor.manufacturerSlug) throw new MarketError("forbidden");
+    f = need(getFulfillment(ctx, fulfillmentId), "fulfillment");
+    if (f.manufacturer_slug !== actor.manufacturerSlug) throw new MarketError("not_found");
+    order = need(getOrder(ctx, f.order_id), "order");
+  } else {
+    f = need(getFulfillment(ctx, fulfillmentId), "fulfillment");
+    order = need(getOrder(ctx, f.order_id), "order");
+  }
+  tx(ctx.db, () => {
+    ctx.db
+      .prepare("INSERT INTO order_messages (order_id, fulfillment_id, author_id, author_role, kind, body, at) VALUES (?,?,?,?,?,?,?)")
+      .run(order.id, f.id, actor.id, actor.role, k, text, iso(ctx));
+    const params = { maker: f.manufacturer_slug, kind: k };
+    if (actor.role === "manufacturer") notifyAdmins(ctx, "admin_order_message", { orderId: order.id, fulfillmentId: f.id, params });
+    else notifyMaker(ctx, f.manufacturer_slug, "maker_order_message", { orderId: order.id, fulfillmentId: f.id, params });
+  });
+}
+
+export const orderMessages = (ctx: Ctx, fulfillmentId: string) =>
+  ctx.db
+    .prepare("SELECT m.*, u.name AS author_name FROM order_messages m LEFT JOIN users u ON u.id = m.author_id WHERE m.fulfillment_id = ? ORDER BY m.id")
+    .all(fulfillmentId) as unknown as (OrderMessageRow & { author_name: string | null })[];
 
 /** Reverse this shipment's commission, payable and delivery entries with new, linked entries. */
 function reverseAllocations(ctx: Ctx, order: OrderRow, f: FulfillmentRow, by: string, why: string) {
@@ -586,7 +648,7 @@ function reverseAllocations(ctx: Ctx, order: OrderRow, f: FulfillmentRow, by: st
 
 export function manufacturerReject(ctx: Ctx, actor: Actor | null, fulfillmentId: string, reason: string) {
   const { maker, f, order } = ownFulfillment(ctx, actor, fulfillmentId);
-  if (!["new", "accepted", "preparing"].includes(f.status)) throw new MarketError("invalid_state");
+  if (!["new", "accepted", "preparing", "in_progress"].includes(f.status)) throw new MarketError("invalid_state");
   const why = cleanText(reason, 500);
   tx(ctx.db, () => {
     ctx.db.prepare("UPDATE fulfillments SET reject_reason = ? WHERE id = ?").run(why, f.id);

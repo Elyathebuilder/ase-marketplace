@@ -1,128 +1,206 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarClock, MapPin, MessageSquare, Truck, Zap } from "lucide-react";
-import { OrderWorkflow } from "@/components/seller/OrderWorkflow";
-import { ProductImage } from "@/components/ProductImage";
-import { getProduct } from "@/lib/catalog";
-import { formatGel } from "@/lib/format";
-import { DEMO_COMMISSION_RATE, demoOrder, demoOrders, demoSeller, orderTotals } from "@/lib/seller-demo";
-import { formatDate, getDict, href, isLang, locMaker, locProduct, place } from "@/i18n";
+import { ArrowLeft, Info, Lock } from "lucide-react";
+import { TextArea } from "@/components/forms/Field";
+import { Submit } from "@/components/forms/Submit";
+import { TestBanner, TestTag } from "@/components/market/journey";
+import { itemName } from "@/components/market/maker";
+import { FormNotice, ReasonAction, Status, tetri, when } from "@/components/market/ui";
+import { SellerForm } from "@/components/seller/kit";
+import { getDict, href, isLang, place, unit } from "@/i18n";
+import { itemSnapshot, makerOrder } from "@/lib/market/queries";
+import { sellerSession } from "@/lib/market/seller-page";
+import { market } from "@/lib/market/server";
+import { ORDER_MESSAGE_KINDS } from "@/lib/market/service";
+import { MarketError } from "@/lib/market/types";
+import { formatBps } from "@/lib/money";
 import { pageLang } from "@/lib/page-lang";
 
 type Params = Promise<{ lang: string; id: string }>;
-
-/** Unknown addresses show the site's 404 page. */
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return demoOrders().map((o) => ({ id: o.id }));
-}
+type SP = Promise<Record<string, string | string[] | undefined>>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { lang, id } = await params;
-  return { title: getDict(isLang(lang) ? lang : "ka").seller.order.title(id) };
+  return { title: getDict(isLang(lang) ? lang : "ka").market.orders.order(id) };
 }
 
-export default async function OrderPage({ params }: { params: Params }) {
-  const { lang, t: dict } = await pageLang(params);
-  const s = dict.seller.order;
-  const o = demoOrder((await params).id);
-  if (!o) notFound();
-  const t = orderTotals(o);
-  const m = locMaker(demoSeller(), lang);
+/** The steps a seller may take, by current status. Payment, collection and delivery are admin-only. */
+const NEXT: Record<string, ("accept" | "prepare" | "progress" | "ready")[]> = {
+  new: ["accept"],
+  accepted: ["prepare"],
+  preparing: ["progress", "ready"],
+  in_progress: ["ready"],
+};
+
+/** Portal B: one order, only the seller's own part of it. */
+export default async function SellerOrderPage({ params, searchParams }: { params: Params; searchParams: SP }) {
+  const { lang, t } = await pageLang(params);
+  const session = await sellerSession();
+  if (!session) return null;
+  const { id } = await params;
+  const sp = await searchParams;
+  const mk = t.market;
+  const s = t.sell.orders;
+  const self = href(lang, `/seller/orders/${id}`);
+
+  let o;
+  try {
+    o = makerOrder(market(), session.actor, id);
+  } catch (e) {
+    if (e instanceof MarketError) notFound();
+    throw e;
+  }
+  const paid = !!o.paymentStage && !["awaiting_customer", "customer_submitted"].includes(o.paymentStage);
+  const next = o.orderCancelled || !paid ? [] : NEXT[o.status] ?? [];
 
   return (
     <div className="space-y-5">
       <Link href={href(lang, "/seller/orders")} className="inline-flex items-center gap-1 text-sm font-semibold text-ink-2 hover:text-red-600">
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" /> {s.back}
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" /> {mk.maker.back}
       </Link>
-      <div className="flex flex-wrap items-baseline gap-x-3">
-        <h1 className="text-2xl font-extrabold">{s.title(o.id)}</h1>
-        <span className="text-sm text-muted">
-          {s.placed(formatDate(o.placedAt, lang, { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }))}
-          {o.type === "quote" && s.fromQuote}
-        </span>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl font-extrabold">{mk.orders.order(o.orderNumber)}</h1>
+        {o.isTest && <TestTag lang={lang} />}
+        <Status value={o.status} labels={mk.shipmentStatus} />
+        <span className="text-sm text-muted">{s.placed}: {when(o.placedAt, lang)}</span>
       </div>
+      {o.isTest && <TestBanner lang={lang} />}
+      <FormNotice lang={lang} sp={sp} />
+      {o.status === "rejected" && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{mk.maker.rejected}{o.rejectReason ? `: ${o.rejectReason}` : ""}</p>}
+      {o.orderCancelled && <p className="rounded-lg bg-paper-2 px-3 py-2 text-sm text-ink-2">{mk.maker.cancelled}</p>}
 
-      <OrderWorkflow initial={o.status} />
+      <div className="grid gap-5 lg:grid-cols-[1fr_20rem]">
+        <div className="min-w-0 space-y-5">
+          <section className="card overflow-hidden">
+            <h2 className="border-b border-line px-4 py-3 text-base font-bold">{s.products}</h2>
+            <ul className="divide-y divide-line text-sm">
+              {o.items.map((i) => {
+                const snap = itemSnapshot(i);
+                const specs = Object.entries(snap.specs ?? {});
+                const options = Object.entries(snap.options ?? {});
+                return (
+                  <li key={i.id} className="flex gap-3 px-4 py-3">
+                    {snap.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- uploads are served by our own permission-checked route
+                      <img src={snap.image} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+                    ) : (
+                      <span className="h-16 w-16 shrink-0 rounded-lg bg-paper-2" aria-hidden="true" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-ink">{itemName(i, lang)}</p>
+                      <p className="text-ink-2">
+                        {s.qty}: <strong>{i.qty}</strong> · {s.unitPrice}: <strong>{tetri(i.unit_price_tetri)}</strong> / {unit(i.unit, lang)}
+                        {i.pricing && <span className="ml-1 rounded bg-paper-2 px-1.5 py-0.5 text-xs font-semibold">{i.pricing === "wholesale" ? s.wholesale : s.retail}</span>}
+                      </p>
+                      {options.length > 0 && <p className="text-xs text-ink-2">{s.options}: {options.map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>}
+                      {specs.length > 0 && <p className="mt-0.5 text-xs text-muted">{specs.map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>}
+                    </div>
+                    <span className="shrink-0 font-semibold tabular-nums">{tetri(i.line_tetri)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <dl className="space-y-1 border-t border-line bg-paper-2/50 px-4 py-3 text-sm">
+              <div className="flex justify-between"><dt>{s.yourTotal}</dt><dd className="tabular-nums">{tetri(o.goods)}</dd></div>
+              <div className="flex justify-between text-ink-2"><dt>{s.commission} ({formatBps(o.commissionBps)}, {mk.commissionBase[o.commissionBase]})</dt><dd className="tabular-nums">−{tetri(o.commission)}</dd></div>
+              <div className="flex justify-between font-bold"><dt>{s.settlement}</dt><dd className="tabular-nums">{tetri(o.payable)}</dd></div>
+            </dl>
+          </section>
 
-      <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
-        <section className="card overflow-hidden">
-          <h2 className="p-4 text-base font-bold md:px-5">{s.items}</h2>
-          <ul className="divide-y divide-line border-t border-line">
-            {o.items.map((i) => {
-              const p = locProduct(getProduct(i.slug)!, lang);
-              return (
-                <li key={i.slug} className="flex items-center gap-3 px-4 py-3 md:px-5">
-                  <ProductImage product={p} size="sm" className="h-14 w-14 shrink-0 rounded-lg" sampleLabel={dict.common.sampleImage} />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-ink">{p.name}</p>
-                    <p className="text-xs text-muted">{i.qty} × {formatGel(i.unitPrice)} · {s.each(`${p.lengthCm}×${p.widthCm}×${p.heightCm}`, p.weightKg)}</p>
-                  </div>
-                  <span className="font-semibold tabular-nums text-ink">{formatGel(i.qty * i.unitPrice)}</span>
+          {next.length > 0 && (
+            <section className="card space-y-3 p-4" aria-labelledby="next-step">
+              <h2 id="next-step" className="text-base font-bold">{s.nextStep}</h2>
+              <SellerForm op="orderStep" back={self} lang={lang} values={{ id: o.id }} className="space-y-2">
+                <TextArea id="os-comment" name="comment" label={s.stepComment} maxLength={500} rows={2} />
+                <div className="flex flex-wrap gap-2">
+                  {next.map((step, n) => (
+                    <Submit key={step} name="step" value={step} className={`btn ${n === 0 ? "btn-primary" : "btn-dark"} px-3 py-1.5 text-sm`}>{s.steps[step]}</Submit>
+                  ))}
+                </div>
+              </SellerForm>
+              {["new", "accepted", "preparing", "in_progress"].includes(o.status) && (
+                <ReasonAction op="makerReject" id={o.id} back={self} label={mk.maker.reject} fieldLabel={mk.maker.rejectReason} danger />
+              )}
+              <p className="flex gap-2 text-xs text-muted"><Info className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />{s.deliveryText}</p>
+            </section>
+          )}
+
+          <section className="card space-y-3 p-4" aria-labelledby="order-messages">
+            <h2 id="order-messages" className="text-base font-bold">{s.messages}</h2>
+            <p className="flex items-center gap-1.5 text-xs text-muted"><Lock className="h-3 w-3" aria-hidden="true" />{s.messagesHint}</p>
+            {o.messages.length === 0 ? (
+              <p className="text-sm text-muted">{s.noMessages}</p>
+            ) : (
+              <ul className="space-y-2">
+                {o.messages.map((m) => (
+                  <li key={m.id} className={`rounded-lg border border-line px-3 py-2 text-sm ${m.author_role === "manufacturer" ? "bg-paper-2" : "bg-surface"}`}>
+                    <p className="flex flex-wrap gap-x-2 text-xs text-muted">
+                      <strong className="text-ink">{m.author_role === "admin" ? t.sell.app.fromAmartani : t.sell.app.you}</strong>
+                      <span className="font-semibold">{s.kind[m.kind]}</span>
+                      <span className="ml-auto tabular-nums">{when(m.at, lang)}</span>
+                    </p>
+                    <p className="mt-1 whitespace-pre-line text-ink-2">{m.body}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <SellerForm op="orderMessage" back={self} lang={lang} values={{ id: o.id }} className="grid gap-2 sm:grid-cols-[12rem_1fr]">
+              <div>
+                <label className="label" htmlFor="om-kind">{s.kindLabel}</label>
+                <select id="om-kind" name="kind" className="input">
+                  {ORDER_MESSAGE_KINDS.map((k) => (
+                    <option key={k} value={k}>{s.kind[k]}</option>
+                  ))}
+                </select>
+              </div>
+              <TextArea id="om-body" name="body" label={s.message} required maxLength={2000} rows={2} />
+              <Submit className="btn btn-dark px-3 py-1.5 text-sm sm:col-start-2 sm:justify-self-start">{s.send}</Submit>
+            </SellerForm>
+          </section>
+
+          <section className="card p-4">
+            <h2 className="text-base font-bold">{s.history}</h2>
+            <ul className="mt-3 space-y-1.5 text-sm">
+              {[...o.history].reverse().map((h) => (
+                <li key={h.id} className="flex flex-wrap gap-x-2">
+                  <span className="text-xs tabular-nums text-muted">{when(h.at, lang)}</span>
+                  <span className="text-ink-2">
+                    {mk.entity[h.entity]}: {h.from_status ? `${(h.entity === "payout" ? mk.payoutStatus : mk.shipmentStatus)[h.from_status] ?? h.from_status} → ` : ""}
+                    <strong className="text-ink">{(h.entity === "payout" ? mk.payoutStatus : mk.shipmentStatus)[h.to_status] ?? h.to_status}</strong>
+                    {h.by_role ? ` · ${mk.roles[h.by_role as "admin"]}` : ""}
+                    {h.note ? ` · ${h.note}` : ""}
+                  </span>
                 </li>
-              );
-            })}
-          </ul>
-          <dl className="space-y-1.5 border-t border-line bg-paper/60 px-4 py-3 text-sm md:px-5">
-            <Row k={s.goodsTotal} v={formatGel(t.goods)} />
-            <Row k={s.commission(Math.round(DEMO_COMMISSION_RATE * 100))} v={`−${formatGel(t.commission)}`} />
-            <Row k={s.payout} v={formatGel(t.payout)} strong />
-            <p className="pt-1 text-xs text-muted">{s.payoutNote}</p>
-          </dl>
-          {o.note && <p className="border-t border-line px-4 py-3 text-sm text-ink-2 md:px-5"><span className="font-semibold">{s.note}:</span> {o.note}</p>}
-        </section>
-
-        <div className="space-y-5">
-          <section className="card p-4 md:p-5">
-            <h2 className="text-base font-bold">{s.delivery}</h2>
-            <ul className="mt-3 space-y-2.5 text-sm text-ink-2">
-              <li className="flex gap-2.5">
-                {o.delivery.mode === "asap" ? <Zap className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden="true" /> : <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden="true" />}
-                <span>
-                  <span className="block font-semibold text-ink">{o.delivery.mode === "asap" ? s.asap : s.scheduled}</span>
-                  {o.delivery.mode === "scheduled" && (
-                    <span>{formatDate(o.delivery.date, lang, { weekday: "long", day: "numeric", month: "long" })}, {o.delivery.window}</span>
-                  )}
-                </span>
-              </li>
-              <li className="flex gap-2.5">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
-                <span>{s.route(m.city, place(o.buyer.city, lang))}</span>
-              </li>
-              <li className="flex gap-2.5">
-                <Truck className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
-                {t.delivery.status === "quoted" ? (
-                  <span>{s.courier(t.delivery.distanceKm)}</span>
-                ) : (
-                  <span>{dict.manual[t.delivery.reason]}</span>
-                )}
-              </li>
+              ))}
             </ul>
           </section>
-
-          <section className="card p-4 md:p-5">
-            <h2 className="text-base font-bold">{s.buyer}</h2>
-            <p className="mt-2 font-semibold text-ink">{o.buyer.business ?? o.buyer.name}</p>
-            {o.buyer.business && <p className="text-sm text-muted">{s.contact(o.buyer.name)}</p>}
-            <p className="text-sm text-muted">{place(o.buyer.city, lang)}</p>
-            <p className="mt-3 text-xs text-muted">{s.buyerNote}</p>
-            <button type="button" className="btn btn-outline mt-3 w-full text-sm" aria-disabled="true">
-              <MessageSquare className="h-4 w-4" aria-hidden="true" /> {s.message}
-            </button>
-          </section>
         </div>
-      </div>
-    </div>
-  );
-}
 
-function Row({ k, v, strong = false }: { k: string; v: string; strong?: boolean }) {
-  return (
-    <div className={`flex justify-between gap-4 ${strong ? "border-t border-line pt-1.5 font-bold text-ink" : "text-ink-2"}`}>
-      <dt>{k}</dt>
-      <dd className="tabular-nums">{v}</dd>
+        <aside className="space-y-4">
+          {o.paymentStage && (
+            <section className="card p-4 text-sm" data-payment-stage={o.paymentStage}>
+              <h2 className="text-base font-bold">{s.paymentStageTitle}</h2>
+              <p className={`mt-2 font-semibold ${paid ? "text-ok" : "text-warn"}`}>{s.paymentStage[o.paymentStage]}</p>
+              {o.payout?.reference && <p className="mt-2 text-ink-2">{mk.maker.transferRef}: <span className="font-mono">{o.payout.reference}</span></p>}
+              {o.payout?.status === "transfer_completed" && o.payout.date && <p className="text-ink-2">{mk.maker.transferDate}: {o.payout.date}</p>}
+              {o.payout?.status === "on_hold" && o.payout.holdReason && <p className="mt-2 text-warn">{mk.maker.holdReason}: {o.payout.holdReason}</p>}
+              <p className="mt-3 text-xs text-muted">{s.paymentOnlyAdmin}</p>
+            </section>
+          )}
+          <section className="card p-4 text-sm">
+            <h2 className="text-base font-bold">{s.customer}</h2>
+            <p className="mt-2 font-semibold">{o.customer.name}</p>
+            <p className="text-ink-2">{place(o.customer.city, lang)}</p>
+            {o.customer.note && <p className="mt-2 text-ink-2">{mk.maker.deliveryNote}: {o.customer.note}</p>}
+            {o.prepareBy && <p className="mt-3 rounded-lg bg-paper-2 px-2 py-1.5"><span className="text-muted">{mk.maker.prepareBy}:</span> <strong>{when(o.prepareBy, lang, false)}</strong></p>}
+          </section>
+          <section className="card p-4 text-sm">
+            <h2 className="text-base font-bold">{s.delivery}</h2>
+            <p className="mt-2 text-ink-2">{s.deliveryText}</p>
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }

@@ -41,6 +41,7 @@ export const FULFILLMENT_STATUSES = [
   "new",
   "accepted",
   "preparing",
+  "in_progress",
   "ready",
   "collected",
   "in_delivery",

@@ -150,6 +150,7 @@ export async function marketAction(f: FormData) {
           bankName: str(f, "bankName"),
           bankIban: str(f, "bankIban"),
           bankSwift: str(f, "bankSwift"),
+          productModeration: f.get("productModeration") === "1",
         });
       }
       default:

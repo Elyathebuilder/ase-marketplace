@@ -5,6 +5,7 @@ import { formatGel, formatNumber } from "@/lib/format";
 import { QUOTE_STATUS, demoQuotes, quoteTitle } from "@/lib/seller-demo";
 import { formatDate, getDict, href, isLang, place, units } from "@/i18n";
 import { pageLang } from "@/lib/page-lang";
+import { sellerSession } from "@/lib/market/seller-page";
 
 type Params = Promise<{ lang: string }>;
 
@@ -15,11 +16,13 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function QuotesPage({ params }: { params: Params }) {
   const { lang, t } = await pageLang(params);
+  if (!(await sellerSession())) return null;
   const s = t.seller.quotes;
   return (
     <div>
       <h1 className="text-2xl font-extrabold">{s.title}</h1>
       <p className="mt-1 text-sm text-muted">{s.intro}</p>
+      <p className="mt-3 rounded-lg bg-warn-50 px-3 py-2 text-sm text-warn"><strong>{t.seller.banner}</strong> {t.seller.bannerText}</p>
       <div className="card mt-5 overflow-x-auto">
         <table className="w-full min-w-[42rem] text-sm">
           <thead className="bg-paper-2 text-left text-xs uppercase tracking-wider text-muted">

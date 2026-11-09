@@ -9,7 +9,7 @@ import { href, isLang, type Lang } from "@/i18n/config";
 import { PLACES } from "../places";
 import * as acc from "./accounts";
 import { errorCode, isSafePath, run, safeBack, str, withParam } from "./action-kit";
-import { currentActor, endSession, startSession } from "./auth";
+import { endSession, startSession } from "./auth";
 import { deliverOutbox } from "./mailer";
 import { market } from "./server";
 import { MarketError } from "./types";

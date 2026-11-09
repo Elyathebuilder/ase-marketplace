@@ -2,47 +2,67 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ClipboardList, FileText, LayoutDashboard, Package, Wallet } from "lucide-react";
+import { BadgeCheck, Building2, ClipboardList, FileCheck2, FileText, LayoutDashboard, Package, Wallet } from "lucide-react";
 import { useI18n } from "@/i18n/client";
 import { href as langHref, stripLang } from "@/i18n/config";
 
-const ITEMS: { href: string; key: "dashboard" | "orders" | "quotes" | "products" | "finances" | "company"; icon: typeof Package; badge?: number }[] = [
-  { href: "/seller", key: "dashboard", icon: LayoutDashboard },
-  { href: "/seller/orders", key: "orders", icon: ClipboardList, badge: 2 },
-  { href: "/seller/quotes", key: "quotes", icon: FileText, badge: 2 },
-  { href: "/seller/products", key: "products", icon: Package },
-  { href: "/seller/finances", key: "finances", icon: Wallet },
-  { href: "/seller/company", key: "company", icon: Building2 },
+type Key = "overview" | "products" | "profile" | "badge" | "application" | "orderList" | "finances" | "quotes";
+type Item = { href: string; key: Key; icon: typeof Package };
+
+/** Portal A (the store) and Portal B (orders and money) are kept apart, as two groups. */
+const GROUPS: { key: "store" | "orders"; items: Item[] }[] = [
+  {
+    key: "store",
+    items: [
+      { href: "/seller", key: "overview", icon: LayoutDashboard },
+      { href: "/seller/products", key: "products", icon: Package },
+      { href: "/seller/company", key: "profile", icon: Building2 },
+      { href: "/seller/verification", key: "badge", icon: BadgeCheck },
+      { href: "/seller/application", key: "application", icon: FileCheck2 },
+    ],
+  },
+  {
+    key: "orders",
+    items: [
+      { href: "/seller/orders", key: "orderList", icon: ClipboardList },
+      { href: "/seller/finances", key: "finances", icon: Wallet },
+      { href: "/seller/quotes", key: "quotes", icon: FileText },
+    ],
+  },
 ];
 
-export function SellerNav() {
+export function SellerNav({ newOrders = 0 }: { newOrders?: number }) {
   const { lang, t } = useI18n();
+  const n = t.sell.nav;
   const path = stripLang(usePathname());
   return (
-    <nav aria-label={t.seller.navLabel}>
-      <ul className="scroll-row auto-cols-max gap-1 lg:grid-flow-row lg:auto-cols-auto lg:overflow-visible">
-        {ITEMS.map(({ href, key, icon: Icon, badge }) => {
-          const label = t.seller.nav[key];
-          const active = href === "/seller" ? path === href : path.startsWith(href);
-          return (
-            <li key={href}>
-              <Link
-                href={langHref(lang, href)}
-                aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-                  active ? "bg-ink text-white" : "text-ink-2 hover:bg-paper-2 hover:text-ink"
-                }`}
-              >
-                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="whitespace-nowrap">{label}</span>
-                {badge ? (
-                  <span className={`ml-auto rounded-full px-1.5 text-xs ${active ? "bg-red-600 text-white" : "bg-red-600 text-white"}`}>{badge}</span>
-                ) : null}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+    <nav aria-label={n.label}>
+      <div className="scroll-row auto-cols-max gap-1 lg:block lg:space-y-4 lg:overflow-visible">
+        {GROUPS.map((g) => (
+          <div key={g.key} className="contents lg:block">
+            <p className="hidden px-3 pb-1 text-xs font-bold uppercase tracking-wider text-muted lg:block">{n[g.key]}</p>
+            <ul className="contents lg:block lg:space-y-0.5">
+              {g.items.map(({ href, key, icon: Icon }) => {
+                const active = href === "/seller" ? path === href : path.startsWith(href);
+                const badge = key === "orderList" ? newOrders : 0;
+                return (
+                  <li key={href}>
+                    <Link
+                      href={langHref(lang, href)}
+                      aria-current={active ? "page" : undefined}
+                      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${active ? "bg-ink text-white" : "text-ink-2 hover:bg-paper-2 hover:text-ink"}`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <span className="whitespace-nowrap">{n[key]}</span>
+                      {badge ? <span className="ml-auto rounded-full bg-red-600 px-1.5 text-xs text-white">{badge}</span> : null}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
     </nav>
   );
 }

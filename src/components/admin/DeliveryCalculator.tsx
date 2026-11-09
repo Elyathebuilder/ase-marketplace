@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { locMaker, locProduct, place } from "@/i18n";
 import { useI18n } from "@/i18n/client";
-import { getAllProducts, manufacturerOf } from "@/lib/catalog";
+import type { Manufacturer, Product } from "@/lib/types";
 import { DEFAULT_DELIVERY_SETTINGS, quoteShipment } from "@/lib/delivery";
 import { formatGel } from "@/lib/format";
 import { PLACES, approxRoadKm } from "@/lib/places";
@@ -11,15 +11,15 @@ import { PLACES, approxRoadKm } from "@/lib/places";
 const pct = (n: number) => `${Math.round(n * 1000) / 10}%`;
 
 /** Internal delivery calculator: shows every step the engine takes. Never shown to customers. */
-export function DeliveryCalculator() {
+export function DeliveryCalculator({ products, makers }: { products: Product[]; makers: Record<string, Manufacturer> }) {
   const { lang, t } = useI18n();
   const a = t.admin;
-  const products = getAllProducts();
-  const [slug, setSlug] = useState("oak-dining-table-180");
+  const [slug, setSlug] = useState(products.some((p) => p.slug === "oak-dining-table-180") ? "oak-dining-table-180" : (products[0]?.slug ?? ""));
   const [qty, setQty] = useState(1);
   const [to, setTo] = useState("Batumi");
-  const product = products.find((p) => p.slug === slug)!;
-  const maker = manufacturerOf(product);
+  const product = products.find((p) => p.slug === slug);
+  if (!product) return null;
+  const maker = makers[product.manufacturer];
   const distance = approxRoadKm(maker.city, to) ?? 0;
   const vName = (id: string, fallback: string) => a.vehicleNames[id] ?? fallback;
 

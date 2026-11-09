@@ -1,4 +1,5 @@
 import { accKa } from "./acc-ka";
+import { sellKa } from "./sell-ka";
 import type { Dict } from "./en";
 import { marketKa } from "./market-ka";
 
@@ -712,4 +713,5 @@ export const ka: Dict = {
   },
   market: marketKa,
   acc: accKa,
+  sell: sellKa,
 };

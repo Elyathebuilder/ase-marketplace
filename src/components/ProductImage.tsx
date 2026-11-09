@@ -1,10 +1,9 @@
-import { getCategory } from "@/lib/catalog";
+import { getCategory } from "@/lib/catalog-core";
 import type { Product } from "@/lib/types";
 import { CategoryIcon } from "./CategoryIcon";
 
 /**
- * Placeholder artwork for demo products (no real photos yet).
- * Real product photos replace this once manufacturers upload images in Phase 3.
+ * The seller's main photo when there is one; otherwise generated artwork for the category.
  */
 const TONES = [
   ["#f6ece6", "#e9d3c7"], ["#efe9df", "#dccfbd"], ["#f4e4e4", "#e2c2c4"], ["#ece7e0", "#d5ccbf"],
@@ -14,6 +13,14 @@ const TONES = [
 ];
 
 export function ProductImage({ product, size = "md", className = "", sampleLabel = "sample image" }: { product: Product; size?: "sm" | "md" | "lg"; className?: string; sampleLabel?: string }) {
+  const photo = product.images?.[0];
+  if (photo)
+    return (
+      <div className={`relative overflow-hidden bg-paper-2 ${className}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- uploads are served by our own permission-checked route */}
+        <img src={photo} alt={product.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+      </div>
+    );
   const [a, b] = TONES[product.tone % TONES.length];
   const icon = getCategory(product.category)?.icon ?? "boxes";
   const iconSize = size === "lg" ? "h-24 w-24" : size === "sm" ? "h-8 w-8" : "h-14 w-14";

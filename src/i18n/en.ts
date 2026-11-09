@@ -1,4 +1,5 @@
 import { accEn } from "./acc-en";
+import { sellEn } from "./sell-en";
 import { marketEn } from "./market-en";
 
 /** English UI text. Georgian (ka.ts) has the same shape and is the default language. */
@@ -704,6 +705,7 @@ export const en = {
   },
   market: marketEn,
   acc: accEn,
+  sell: sellEn,
 };
 
 type Widen<T> = T extends string

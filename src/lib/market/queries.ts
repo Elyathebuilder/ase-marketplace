@@ -10,6 +10,7 @@ import {
   fulfillmentsOf,
   getOrder,
   ledgerSum,
+  orderMessages,
   paymentsOf,
   type Ctx,
   type FulfillmentRow,
@@ -30,6 +31,31 @@ export interface ItemRow {
   unit_price_tetri: number;
   qty: number;
   line_tetri: number;
+  manufacturer_slug: string | null;
+  manufacturer_name: string | null;
+  /** "retail" or "wholesale": which price the customer got. Older orders have none. */
+  pricing: string | null;
+  /** JSON: the product as it was when ordered (see productSnapshot in service.ts). */
+  snapshot: string | null;
+}
+
+export interface ItemSnapshot {
+  name?: string;
+  nameKa?: string | null;
+  specs?: Record<string, string>;
+  materials?: string[];
+  image?: string | null;
+  options?: Record<string, string>;
+  dimensionsCm?: (number | null)[];
+  weightKg?: number | null;
+}
+
+export function itemSnapshot(i: ItemRow): ItemSnapshot {
+  try {
+    return i.snapshot ? (JSON.parse(i.snapshot) as ItemSnapshot) : {};
+  } catch {
+    return {};
+  }
 }
 
 export interface HistoryRow {
@@ -163,11 +189,27 @@ function requireMaker(a: Actor | null): Actor & { manufacturerSlug: string } {
   return a as Actor & { manufacturerSlug: string };
 }
 
+/** Where the money stands, as the seller sees it. Only an administrator's actions move it forward. */
+export type SellerPaymentStage = "awaiting_customer" | "customer_submitted" | "verified" | "approved_for_preparation" | "payout_pending" | "paid" | "settled";
+
+function sellerPaymentStage(ctx: Ctx, order: OrderRow, f: FulfillmentRow, po: PayoutRow | undefined): SellerPaymentStage | null {
+  if (order.status === "cancelled" || order.status === "refunded" || f.status === "rejected" || f.status === "cancelled") return null;
+  if (ledgerSum(ctx, order.id, "customer_payment") < order.total_tetri)
+    return paymentsOf(ctx, order.id).some((p) => p.status === "submitted" || p.status === "verification_pending") ? "customer_submitted" : "awaiting_customer";
+  if (po?.status === "transfer_completed") return order.status === "completed" ? "settled" : "paid";
+  if (po && po.status !== "not_eligible") return "payout_pending";
+  return f.status === "new" ? "verified" : "approved_for_preparation";
+}
+
 /** What a manufacturer sees of one order: its own shipment only, and only what it needs to prepare it. */
 function makerView(ctx: Ctx, f: FulfillmentRow) {
   const order = getOrder(ctx, f.order_id)!;
   const po = payoutOf(ctx, f.id);
   return {
+    paymentStage: sellerPaymentStage(ctx, order, f, po),
+    orderStatus: order.status,
+    disputed: order.hold_kind === "dispute",
+    messages: orderMessages(ctx, f.id),
     id: f.id,
     orderNumber: order.id,
     isTest: order.is_test === 1,
@@ -179,6 +221,7 @@ function makerView(ctx: Ctx, f: FulfillmentRow) {
     rejectReason: f.reject_reason,
     // Amartani collects and delivers, so the manufacturer gets the name, city and any note, not the full address.
     customer: { name: order.delivery_name, city: order.delivery_city, note: order.delivery_note },
+    deliveryMethod: "amartani" as const,
     items: ctx.db.prepare("SELECT * FROM order_items WHERE fulfillment_id = ? ORDER BY id").all(f.id) as unknown as ItemRow[],
     goods: f.goods_tetri,
     commissionBps: order.commission_bps,
@@ -301,7 +344,7 @@ export function adminOrder(ctx: Ctx, actor: Actor | null, orderId: string) {
   return {
     order,
     customerName: userName(ctx, order.customer_id),
-    shipments: fulfillmentsOf(ctx, orderId).map((f) => ({ ...f, items: items.filter((i) => i.fulfillment_id === f.id), payout: payoutOf(ctx, f.id)! })),
+    shipments: fulfillmentsOf(ctx, orderId).map((f) => ({ ...f, items: items.filter((i) => i.fulfillment_id === f.id), payout: payoutOf(ctx, f.id)!, messages: orderMessages(ctx, f.id) })),
     payments: paymentsOf(ctx, orderId).map((p) => ({ ...p, verified_by_name: userName(ctx, p.verified_by) })),
     refunds: refundsOf(ctx, orderId),
     ledger: ctx.db
@@ -442,14 +485,46 @@ export function markNotificationsRead(ctx: Ctx, actor: Actor | null, id?: number
   else ctx.db.prepare("UPDATE notifications SET read_at = ? WHERE user_id = ? AND id = ? AND read_at IS NULL").run(at, actor.id, id);
 }
 
-/** Who may download an uploaded receipt or transfer confirmation. */
+/**
+ * Who may download an uploaded file.
+ * - Public: photos of published products, and logos and workshop photos of approved sellers.
+ * - The seller: everything it uploaded itself (documents, draft product photos), but never inspection photos.
+ * - The customer: their own payment receipts. The manufacturer: confirmations of its completed payouts.
+ * - Admins: everything. Registration documents are never public.
+ */
 export function canReadFile(ctx: Ctx, actor: Actor | null, file: string): boolean {
+  if (isPublicFile(ctx, file)) return true;
   if (!actor) return false;
   if (actor.role === "admin") return true;
   if (actor.role === "customer") {
-    return !!ctx.db.prepare("SELECT 1 FROM payments p JOIN orders o ON o.id = p.order_id WHERE p.receipt_file = ? AND o.customer_id = ?").get(file, actor.id);
+    return (
+      !!ctx.db.prepare("SELECT 1 FROM payments p JOIN orders o ON o.id = p.order_id WHERE p.receipt_file = ? AND o.customer_id = ?").get(file, actor.id) ||
+      // The photo of a product as it was when they ordered it, even if the seller later removed it.
+      !!ctx.db.prepare("SELECT 1 FROM order_items i JOIN orders o ON o.id = i.order_id WHERE o.customer_id = ? AND instr(i.snapshot, ?) > 0").get(actor.id, `/api/files/${file}`)
+    );
   }
-  return !!ctx.db
-    .prepare("SELECT 1 FROM payouts po JOIN fulfillments f ON f.id = po.fulfillment_id WHERE po.confirmation_file = ? AND f.manufacturer_slug = ? AND po.status = 'transfer_completed'")
-    .get(file, actor.manufacturerSlug ?? "");
+  const slug = actor.manufacturerSlug ?? "";
+  return (
+    // Registration documents are for administrators only, also after the seller uploaded them; so are inspection photos.
+    !!ctx.db.prepare("SELECT 1 FROM seller_files WHERE file = ? AND manufacturer_slug = ? AND kind NOT IN ('inspection_photo','registration_document')").get(file, slug) ||
+    !!ctx.db.prepare("SELECT 1 FROM order_items WHERE manufacturer_slug = ? AND instr(snapshot, ?) > 0").get(slug, `/api/files/${file}`) ||
+    !!ctx.db.prepare("SELECT 1 FROM product_images i JOIN products p ON p.slug = i.product_slug WHERE i.file = ? AND p.manufacturer_slug = ?").get(file, slug) ||
+    !!ctx.db.prepare("SELECT 1 FROM manufacturers WHERE logo_file = ? AND slug = ?").get(file, slug) ||
+    !!ctx.db
+      .prepare("SELECT 1 FROM payouts po JOIN fulfillments f ON f.id = po.fulfillment_id WHERE po.confirmation_file = ? AND f.manufacturer_slug = ? AND po.status = 'transfer_completed'")
+      .get(file, slug)
+  );
+}
+
+const APPROVED_SQL = "('approved_company','approved_independent')";
+export function isPublicFile(ctx: Ctx, file: string): boolean {
+  return (
+    !!ctx.db
+      .prepare(`SELECT 1 FROM product_images i JOIN products p ON p.slug = i.product_slug JOIN manufacturers m ON m.slug = p.manufacturer_slug WHERE i.file = ? AND p.status = 'published' AND m.account_status IN ${APPROVED_SQL}`)
+      .get(file) ||
+    !!ctx.db.prepare(`SELECT 1 FROM manufacturers WHERE logo_file = ? AND account_status IN ${APPROVED_SQL}`).get(file) ||
+    !!ctx.db
+      .prepare(`SELECT 1 FROM seller_files f JOIN manufacturers m ON m.slug = f.manufacturer_slug WHERE f.file = ? AND f.kind = 'workshop_photo' AND f.related_id IS NULL AND f.removed_at IS NULL AND m.account_status IN ${APPROVED_SQL}`)
+      .get(file)
+  );
 }

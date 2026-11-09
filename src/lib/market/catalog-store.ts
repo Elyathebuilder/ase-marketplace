@@ -221,7 +221,7 @@ export function publicCatalog(db: DB): Snapshot {
   const photoRows = db
     .prepare(
       `SELECT f.manufacturer_slug, f.file FROM seller_files f JOIN manufacturers m ON m.slug = f.manufacturer_slug
-       WHERE f.kind = 'workshop_photo' AND f.removed_at IS NULL AND m.account_status IN ('approved_company','approved_independent') ORDER BY f.uploaded_at`,
+       WHERE f.kind = 'workshop_photo' AND f.related_id IS NULL AND f.removed_at IS NULL AND m.account_status IN ('approved_company','approved_independent') ORDER BY f.uploaded_at`,
     )
     .all() as { manufacturer_slug: string; file: string }[];
   const photos = group(photoRows, (r) => r.manufacturer_slug, (r) => fileUrl(r.file));

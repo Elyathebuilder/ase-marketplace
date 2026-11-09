@@ -5,6 +5,7 @@ import { DEFAULT_DELIVERY_SETTINGS } from "@/lib/delivery";
 import { formatGel } from "@/lib/format";
 import { pageLang } from "@/lib/page-lang";
 import { adminOrNull } from "@/lib/market/auth";
+import { getAllProducts, getManufacturers } from "@/lib/catalog";
 
 type Params = Promise<{ lang: string }>;
 
@@ -28,7 +29,7 @@ export default async function AdminDeliveryPage({ params }: { params: Params }) 
           <p className="mt-1 max-w-3xl text-sm text-ink-2">{a.intro}</p>
         </div>
 
-        <DeliveryCalculator />
+        <DeliveryCalculator products={getAllProducts()} makers={Object.fromEntries(getManufacturers().map((m) => [m.slug, m]))} />
 
         <section>
           <h2 className="text-lg font-bold">{a.rates}</h2>

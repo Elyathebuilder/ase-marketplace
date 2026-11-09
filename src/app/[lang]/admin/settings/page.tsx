@@ -64,6 +64,14 @@ export default async function AdminSettings({ params, searchParams }: { params: 
             {field("bankSwift", s.swift, cur.bankSwift, { maxLength: 120 })}
           </div>
         </section>
+        <section className="card space-y-2 p-4">
+          <h2 className="text-base font-bold">{s.moderationTitle}</h2>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" name="productModeration" value="1" defaultChecked={cur.productModeration} className="mt-1" />
+            <span>{s.moderation}</span>
+          </label>
+          <p className="text-xs text-ink-2">{s.moderationHelp}</p>
+        </section>
         <button type="submit" className="btn btn-primary">{s.save}</button>
       </ActionForm>
 

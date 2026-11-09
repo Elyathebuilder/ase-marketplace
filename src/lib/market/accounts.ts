@@ -169,6 +169,7 @@ export function registerSeller(ctx: Ctx, input: RegisterInput & { sellerType: st
   const sellerType = input.sellerType === "independent" ? "independent" : input.sellerType === "company" ? "company" : null;
   if (!sellerType) throw new MarketError("invalid_input", "seller type");
   const storeName = cleanName(input.storeName, 120);
+  cleanPhone(input.phone, true); // sellers must give a phone number: Amartani calls them to arrange collection
   return tx(ctx.db, () => {
     const slug = uniqueSlug(ctx, storeName);
     const { id, email } = createUser(ctx, "manufacturer", { ...input, phone: input.phone }, slug);

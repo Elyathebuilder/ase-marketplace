@@ -19,6 +19,8 @@ export interface Settings {
   bankName: string;
   bankIban: string;
   bankSwift: string;
+  /** When on, a seller's product waits for an admin before it is shown publicly. */
+  productModeration: boolean;
   /**
    * Test mode: every new order is a TEST order. Customers see test bank details that are not a
    * real account, and test orders are left out of the financial totals. On unless ASE_TEST_MODE=0.
@@ -36,6 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   bankName: "Demo Bank of Georgia",
   bankIban: "GE00 DEMO 0000 0000 0000 00",
   bankSwift: "DEMOGE22",
+  productModeration: false,
   testMode: true,
 };
 
@@ -52,7 +55,7 @@ export function getSettings(ctx: Ctx): Settings {
   for (const { key, value } of rows) {
     if (!KEYS.includes(key as EditableKey)) continue;
     const k = key as EditableKey;
-    (out as unknown as Record<string, unknown>)[k] = typeof DEFAULT_SETTINGS[k] === "number" ? Number(value) : value;
+    (out as unknown as Record<string, unknown>)[k] = typeof DEFAULT_SETTINGS[k] === "number" ? Number(value) : typeof DEFAULT_SETTINGS[k] === "boolean" ? value === "1" : value;
   }
   return out;
 }
@@ -69,6 +72,8 @@ function validate(k: EditableKey, v: unknown): string {
       if (!Number.isInteger(n) || n < 0 || n > 24 * 30) throw new MarketError("invalid_input", "deadline must be 0–720 hours");
       return String(n);
     }
+    case "productModeration":
+      return v === true || v === "1" || v === "on" || v === "true" ? "1" : "0";
     case "commissionBase":
       if (v !== "products" && v !== "products_and_delivery") throw new MarketError("invalid_input", "invalid commission base");
       return v;
@@ -84,7 +89,8 @@ function validate(k: EditableKey, v: unknown): string {
 export function updateSettings(ctx: Ctx, actor: Actor | null, patch: Partial<Record<keyof Settings, unknown>>) {
   if (!actor || actor.role !== "admin") throw new MarketError("forbidden");
   const current = getSettings(ctx);
-  const changes = KEYS.filter((k) => k in patch).map((k) => [k, validate(k, patch[k]), String(current[k])] as const);
+  const stored = (v: unknown) => (typeof v === "boolean" ? (v ? "1" : "0") : String(v));
+  const changes = KEYS.filter((k) => k in patch).map((k) => [k, validate(k, patch[k]), stored(current[k])] as const);
   const at = ctx.now().toISOString();
   tx(ctx.db, () => {
     for (const [k, value, old] of changes) {

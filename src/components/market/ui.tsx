@@ -14,6 +14,7 @@ const TONE: Record<string, Tone> = {
   payment_submitted: "blue",
   payment_confirmed: "blue",
   preparing: "blue",
+  in_progress: "blue",
   ready: "blue",
   collected: "blue",
   in_delivery: "blue",

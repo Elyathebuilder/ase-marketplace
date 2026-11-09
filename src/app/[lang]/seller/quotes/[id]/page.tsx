@@ -9,6 +9,7 @@ import { formatGel, formatNumber } from "@/lib/format";
 import { QUOTE_STATUS, demoQuote, demoQuotes, quoteTitle } from "@/lib/seller-demo";
 import { formatDate, getDict, href, isLang, place, units } from "@/i18n";
 import { pageLang } from "@/lib/page-lang";
+import { sellerSession } from "@/lib/market/seller-page";
 
 type Params = Promise<{ lang: string; id: string }>;
 
@@ -26,6 +27,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function QuotePage({ params }: { params: Params }) {
   const { lang, t } = await pageLang(params);
+  if (!(await sellerSession())) return null;
   const s = t.seller.quote;
   const q = demoQuote((await params).id);
   if (!q) notFound();
@@ -34,6 +36,7 @@ export default async function QuotePage({ params }: { params: Params }) {
 
   return (
     <div className="space-y-5">
+      <p className="rounded-lg bg-warn-50 px-3 py-2 text-sm text-warn"><strong>{t.seller.banner}</strong> {t.seller.bannerText}</p>
       <Link href={href(lang, "/seller/quotes")} className="inline-flex items-center gap-1 text-sm font-semibold text-ink-2 hover:text-red-600">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> {s.back}
       </Link>

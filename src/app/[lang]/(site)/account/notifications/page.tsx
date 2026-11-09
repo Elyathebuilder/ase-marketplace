@@ -27,8 +27,10 @@ export default async function NotificationsPage({ params }: { params: Params }) 
       </div>
     );
   const list = notificationsFor(market(), actor);
+  // Seller and badge notifications carry their own in-app path; it is only followed when it is a local path.
+  const own = (p: Record<string, unknown>) => (typeof p.link === "string" && /^\/[a-z0-9/_-]*$/i.test(p.link) ? href(lang, p.link) : null);
   const link = (orderId: string | null, fid: string | null) =>
-    !orderId ? null : actor.role === "customer" ? href(lang, `/account/orders/${orderId}`) : actor.role === "admin" ? href(lang, `/admin/orders/${orderId}`) : fid ? href(lang, `/seller/orders/live/${fid}`) : null;
+    !orderId ? null : actor.role === "customer" ? href(lang, `/account/orders/${orderId}`) : actor.role === "admin" ? href(lang, `/admin/orders/${orderId}`) : fid ? href(lang, `/seller/orders/${fid}`) : null;
 
   return (
     <div className="container-page max-w-3xl py-6 md:py-8">
@@ -42,7 +44,7 @@ export default async function NotificationsPage({ params }: { params: Params }) 
       ) : (
         <ul className="card mt-6 divide-y divide-line">
           {list.map((x) => {
-            const to = link(x.order_id, x.fulfillment_id);
+            const to = own(x.params) ?? link(x.order_id, x.fulfillment_id);
             return (
               <li key={x.id} className={`flex gap-3 px-4 py-3 ${x.read_at ? "" : "bg-red-50/50"}`}>
                 <Bell className={`mt-0.5 h-4 w-4 shrink-0 ${x.read_at ? "text-subtle" : "text-red-600"}`} aria-hidden="true" />

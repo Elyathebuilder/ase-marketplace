@@ -9,3 +9,4 @@ next-env.d.ts
 
 # Demo database, uploads and session secret (created at runtime)
 data/
+e2e-out/

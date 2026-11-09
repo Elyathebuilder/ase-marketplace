@@ -95,7 +95,7 @@ export default async function SellerLayout({ children, params }: { children: Rea
           <LanguageSwitcher className="mb-3 sm:hidden" />
           <SellerNav newOrders={newOrders} />
           <div className="mt-6 hidden space-y-2 rounded-xl border border-line bg-surface p-3 lg:block">
-            <StatusChip status={store.account_status} label={s.accountStatus[store.account_status] ?? store.account_status} />
+            <StatusChip wrap status={store.account_status} label={s.accountStatus[store.account_status] ?? store.account_status} />
             {store.badge_status === "verified" && <VerifiedBadge status="verified" lang={lang} />}
           </div>
         </aside>

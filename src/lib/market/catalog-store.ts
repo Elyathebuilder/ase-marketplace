@@ -202,8 +202,11 @@ interface Snapshot {
   makerBySlug: Map<string, Manufacturer>;
 }
 
-const versions = new WeakMap<DB, number>();
-const cache = new WeakMap<DB, Snapshot>();
+// Kept on globalThis: Next.js can load this file more than once (pages, server actions and API routes
+// are separate bundles), and a change made by one copy must drop the cache of every copy.
+const shared = globalThis as unknown as { __aseCatalog?: { versions: WeakMap<DB, number>; cache: WeakMap<DB, Snapshot> } };
+shared.__aseCatalog ??= { versions: new WeakMap(), cache: new WeakMap() };
+const { versions, cache } = shared.__aseCatalog;
 
 /** Call after any change to sellers, products or their images. */
 export function bumpCatalog(db: DB) {

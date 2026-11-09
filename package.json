@@ -2,14 +2,15 @@
   "name": "ase-marketplace",
   "version": "0.1.0",
   "private": true,
-  "description": "ASE — marketplace for products manufactured in Georgia (B2C + B2B).",
+  "description": "ASE \u2014 marketplace for products manufactured in Georgia (B2C + B2B).",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "node tests/e2e/journey.mjs"
   },
   "engines": {
     "node": ">=22.13"

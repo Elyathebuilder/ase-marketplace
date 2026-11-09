@@ -119,8 +119,8 @@ export function StatusBox({ status, label, text, children }: { status: string; l
 }
 
 /** Small status chip for tables. */
-export function StatusChip({ status, label }: { status: string; label: string }) {
-  return <span className={`inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-semibold ${TONE[status] ?? TONE.draft}`}>{label}</span>;
+export function StatusChip({ status, label, wrap = false }: { status: string; label: string; wrap?: boolean }) {
+  return <span data-status={status} className={`inline-block ${wrap ? "max-w-full" : "whitespace-nowrap"} rounded-full border px-2 py-0.5 text-xs font-semibold ${TONE[status] ?? TONE.draft}`}>{label}</span>;
 }
 
 /** Messages between a seller and Amartani. Internal notes are passed only on admin pages. */

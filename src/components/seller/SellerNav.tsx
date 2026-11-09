@@ -37,11 +37,12 @@ export function SellerNav({ newOrders = 0 }: { newOrders?: number }) {
   const path = stripLang(usePathname());
   return (
     <nav aria-label={n.label}>
-      <div className="scroll-row auto-cols-max gap-1 lg:block lg:space-y-4 lg:overflow-visible">
+      {/* Phones: one scrolling row per portal, so both the store and the orders are visible at once. */}
+      <div className="space-y-2 lg:space-y-4">
         {GROUPS.map((g) => (
-          <div key={g.key} className="contents lg:block">
-            <p className="hidden px-3 pb-1 text-xs font-bold uppercase tracking-wider text-muted lg:block">{n[g.key]}</p>
-            <ul className="contents lg:block lg:space-y-0.5">
+          <div key={g.key}>
+            <p className="px-1 pb-1 text-xs font-bold uppercase tracking-wider text-muted lg:px-3">{n[g.key]}</p>
+            <ul className="scroll-row auto-cols-max gap-1 lg:block lg:space-y-0.5 lg:overflow-visible">
               {g.items.map(({ href, key, icon: Icon }) => {
                 const active = href === "/seller" ? path === href : path.startsWith(href);
                 const badge = key === "orderList" ? newOrders : 0;

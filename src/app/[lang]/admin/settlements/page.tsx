@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
+import { makerLabel } from "@/lib/market/sellers";
 import Link from "next/link";
 import { Paperclip } from "lucide-react";
 import { TestTag } from "@/components/market/journey";
 import { ActionButton, ActionForm, FormNotice, ReasonAction, Status, Table, tetri } from "@/components/market/ui";
-import { getDict, href, isLang, locMaker } from "@/i18n";
-import { getManufacturer } from "@/lib/catalog";
+import { getDict, href, isLang } from "@/i18n";
 import { adminOrNull } from "@/lib/market/auth";
 import { adminSettlements } from "@/lib/market/queries";
 import { market } from "@/lib/market/server";
@@ -41,7 +41,7 @@ export default async function AdminSettlements({ params, searchParams }: { param
       ) : (
         <Table min="84rem" head={[s.manufacturer, s.order, s.subtotal, s.commission, s.payable, s.account, s.status, s.reference, s.date, ""]}>
           {rows.map((r) => {
-            const maker = locMaker(getManufacturer(r.manufacturer_slug)!, lang);
+            const maker = makerLabel(market(), r.manufacturer_slug, lang);
             const inactive = r.fulfillment_status === "rejected" || r.fulfillment_status === "cancelled";
             return (
               <tr key={r.id} className={inactive ? "opacity-60" : ""}>

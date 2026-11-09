@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { market } from "@/lib/market/server";
+import { makerLabel } from "@/lib/market/sellers";
 import Link from "next/link";
 import { Factory, FlaskConical, ShieldCheck, User } from "lucide-react";
 import { Field, Hidden } from "@/components/forms/Field";
 import { Submit } from "@/components/forms/Submit";
 import { FormNotice } from "@/components/market/ui";
-import { getDict, href, isLang, locMaker } from "@/i18n";
-import { getManufacturer } from "@/lib/catalog";
+import { getDict, href, isLang } from "@/i18n";
 import { signInWithPassword } from "@/lib/market/account-actions";
 import { signInAs, signOut } from "@/lib/market/actions";
 import { currentActor, demoAccounts } from "@/lib/market/auth";
@@ -83,7 +84,7 @@ export default async function SignInPage({ params, searchParams }: { params: Par
               {accounts
                 .filter((a) => a.role === role)
                 .map((a) => {
-                  const name = a.manufacturer_slug ? locMaker(getManufacturer(a.manufacturer_slug)!, lang).name : a.name;
+                  const name = a.manufacturer_slug ? makerLabel(market(), a.manufacturer_slug, lang).name : a.name;
                   return (
                     <li key={a.id}>
                       <form action={signInAs}>

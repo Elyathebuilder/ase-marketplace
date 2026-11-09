@@ -1,5 +1,6 @@
 import { accEn } from "./acc-en";
 import { sellEn } from "./sell-en";
+import { admEn } from "./adm-en";
 import { marketEn } from "./market-en";
 
 /** English UI text. Georgian (ka.ts) has the same shape and is the default language. */
@@ -247,6 +248,12 @@ export const en = {
     related: "Related products",
   },
   purchase: {
+    tierApplied: (unit: string, price: string) => `Quantity price applied: ${price} / ${unit}.`,
+    tiersTitle: "Quantity prices",
+    tierRow: (qty: number, unit: string) => `From ${qty} ${unit}`,
+    colour: "Colour",
+    choose: "Choose",
+    unavailable: "This product is not available at the moment.",
     quantity: "Quantity",
     decrease: "Decrease quantity",
     increase: "Increase quantity",
@@ -706,6 +713,7 @@ export const en = {
   market: marketEn,
   acc: accEn,
   sell: sellEn,
+  adm: admEn,
 };
 
 type Widen<T> = T extends string

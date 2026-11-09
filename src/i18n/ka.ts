@@ -1,5 +1,6 @@
 import { accKa } from "./acc-ka";
 import { sellKa } from "./sell-ka";
+import { admKa } from "./adm-ka";
 import type { Dict } from "./en";
 import { marketKa } from "./market-ka";
 
@@ -248,6 +249,12 @@ export const ka: Dict = {
     related: "მსგავსი პროდუქცია",
   },
   purchase: {
+    tierApplied: (unit: string, price: string) => `გამოყენებულია რაოდენობის ფასი: ${price} / ${unit}.`,
+    tiersTitle: "ფასი რაოდენობის მიხედვით",
+    tierRow: (qty: number, unit: string) => `${qty} ${unit}-დან`,
+    colour: "ფერი",
+    choose: "აირჩიეთ",
+    unavailable: "ეს პროდუქტი ამჟამად მიუწვდომელია.",
     quantity: "რაოდენობა",
     decrease: "რაოდენობის შემცირება",
     increase: "რაოდენობის გაზრდა",
@@ -714,4 +721,5 @@ export const ka: Dict = {
   market: marketKa,
   acc: accKa,
   sell: sellKa,
+  adm: admKa,
 };

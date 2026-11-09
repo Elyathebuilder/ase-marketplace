@@ -146,6 +146,10 @@ export default async function ProductPage({ params }: { params: Params }) {
               moq={product.moq}
               stock={product.stock}
               tiers={product.wholesale?.tiers ?? []}
+              quoteOnly={product.wholesale?.quoteOnly ?? true}
+              variants={product.variants}
+              colors={product.colors}
+              available={product.available !== false}
             />
           </div>
 

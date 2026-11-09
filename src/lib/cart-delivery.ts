@@ -41,12 +41,17 @@ export interface CartQuote {
 const round = (n: number) => Math.round(n * 100) / 100;
 
 /** Keeps only choices the product really offers. */
+/** Option key used for the product's colour choice. */
+export const COLOUR = "Colour";
+
 export function cleanOptions(product: Product, options: Record<string, string> | undefined): Record<string, string> {
   const out: Record<string, string> = {};
   for (const v of product.variants ?? []) {
     const chosen = options?.[v.name];
     if (chosen && v.options.includes(chosen)) out[v.name] = chosen;
   }
+  const colour = options?.[COLOUR];
+  if (colour && product.colors?.includes(colour)) out[COLOUR] = colour;
   return out;
 }
 
@@ -54,7 +59,7 @@ export function quoteCartDelivery(lines: CartInputLine[], destinationCity: strin
   const groups = new Map<string, CartGroup>();
   for (const line of lines) {
     const product = lookup.product(line.slug);
-    if (!product || !lookup.maker(product.manufacturer) || !Number.isInteger(line.qty) || line.qty <= 0) continue;
+    if (!product || product.available === false || !lookup.maker(product.manufacturer) || !Number.isInteger(line.qty) || line.qty <= 0) continue;
     // Only products that can be bought at a fixed price belong in the cart.
     const price = unitPriceFor(product, line.qty);
     if (!price) continue;

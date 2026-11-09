@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { makerLabel } from "@/lib/market/sellers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, Info, Landmark, MapPin, Paperclip } from "lucide-react";
 import { OrderTimeline, TestBanner, TestTag } from "@/components/market/journey";
 import { ActionButton, FormNotice, SignInRequired, Status, tetri, when } from "@/components/market/ui";
-import { getDict, href, isLang, locMaker, place } from "@/i18n";
-import { getManufacturer, getProduct } from "@/lib/catalog";
+import { getDict, href, isLang, place } from "@/i18n";
+import { getProduct } from "@/lib/catalog";
 import { locProduct } from "@/i18n";
 import { currentActor } from "@/lib/market/auth";
 import { customerOrder } from "@/lib/market/queries";
@@ -100,7 +101,8 @@ export default async function CustomerOrderPage({ params, searchParams }: { para
             <h2 className="text-base font-bold">{o.shipments}</h2>
             {shipments.length > 1 && <p className="flex gap-2 text-sm text-ink-2"><Info className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden="true" />{o.separate}</p>}
             {shipments.map((s) => {
-              const maker = locMaker(getManufacturer(s.manufacturer)!, lang);
+              const label = makerLabel(market(), s.manufacturer, lang);
+              const maker = { name: label.name, city: label.city ? place(label.city, lang) : "" };
               return (
                 <div key={s.id} className="card overflow-hidden">
                   <div className="flex flex-wrap items-center gap-2 border-b border-line bg-paper-2/60 px-4 py-2.5">

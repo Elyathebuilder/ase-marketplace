@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import { makerLabel } from "@/lib/market/sellers";
 import { ActionForm, FormNotice, Table, when } from "@/components/market/ui";
-import { getDict, href, isLang, locMaker } from "@/i18n";
-import { getManufacturer } from "@/lib/catalog";
+import { getDict, href, isLang } from "@/i18n";
 import { adminOrNull } from "@/lib/market/auth";
 import { manufacturerBankAccounts } from "@/lib/market/queries";
 import { market } from "@/lib/market/server";
@@ -98,7 +98,7 @@ export default async function AdminSettings({ params, searchParams }: { params: 
           <Table min="36rem" head={[m.admin.settlements.manufacturer, s.holder, s.bankName, s.iban]}>
             {accounts.map((a) => (
               <tr key={a.manufacturer_slug}>
-                <td className="px-3 py-2 font-semibold">{locMaker(getManufacturer(a.manufacturer_slug)!, lang).name}</td>
+                <td className="px-3 py-2 font-semibold">{makerLabel(market(), a.manufacturer_slug, lang).name}</td>
                 <td className="px-3 py-2">{a.account_holder}</td>
                 <td className="px-3 py-2">{a.bank_name}</td>
                 <td className="px-3 py-2 font-mono text-xs">{a.iban}</td>

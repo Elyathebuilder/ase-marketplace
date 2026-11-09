@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft, Info } from "lucide-react";
 import { TestBanner, TestTag } from "@/components/market/journey";
 import { ActionButton, ActionForm, FormNotice, ReasonAction, Status, Table, tetri, when } from "@/components/market/ui";
-import { getDict, href, isLang, locMaker, place } from "@/i18n";
-import { getManufacturer } from "@/lib/catalog";
+import { getDict, href, isLang, place } from "@/i18n";
+import { getMaker } from "@/lib/market/sellers";
+import { SellerForm } from "@/components/seller/kit";
+import { ORDER_MESSAGE_KINDS } from "@/lib/market/service";
 import { adminOrNull } from "@/lib/market/auth";
 import { adminOrder } from "@/lib/market/queries";
 import { market } from "@/lib/market/server";
@@ -71,7 +73,8 @@ export default async function AdminOrderPage({ params, searchParams }: { params:
             <h2 className="text-lg font-bold">{a.shipments}</h2>
             <p className="text-xs text-muted">{a.commissionRate(formatBps(order.commission_bps), m.commissionBase[order.commission_base])}</p>
             {v.shipments.map((s) => {
-              const maker = locMaker(getManufacturer(s.manufacturer_slug)!, lang);
+              const row = getMaker(market(), s.manufacturer_slug);
+              const maker = { name: (lang === "ka" && row?.name_ka) || row?.name || s.manufacturer_slug, city: row?.city ? place(row.city, lang) : "" };
               const step = ADMIN_NEXT[s.status];
               return (
                 <div key={s.id} className="card overflow-hidden">
@@ -101,6 +104,29 @@ export default async function AdminOrderPage({ params, searchParams }: { params:
                       {step && <span className="ml-auto"><ActionButton op="adminStep" id={s.id} back={self} label={a[step]} extra={{ step }} tone="primary" /></span>}
                     </div>
                   )}
+                  <details className="border-t border-line px-4 py-2.5" open={s.messages.length > 0}>
+                    <summary className="cursor-pointer text-sm font-semibold">{t.sell.orders.messages} ({s.messages.length})</summary>
+                    <ul className="mt-2 space-y-2">
+                      {s.messages.map((msg) => (
+                        <li key={msg.id} className={`rounded-lg border border-line px-3 py-2 text-sm ${msg.author_role === "admin" ? "bg-paper-2" : "bg-surface"}`}>
+                          <p className="flex flex-wrap gap-x-2 text-xs text-muted">
+                            <strong className="text-ink">{msg.author_name ?? msg.author_role}</strong>
+                            <span className="font-semibold">{t.sell.orders.kind[msg.kind]}</span>
+                            <span className="ml-auto tabular-nums">{when(msg.at, lang)}</span>
+                          </p>
+                          <p className="mt-1 whitespace-pre-line text-ink-2">{msg.body}</p>
+                        </li>
+                      ))}
+                    </ul>
+                    <SellerForm op="orderMessage" back={self} lang={lang} values={{ id: s.id }} className="mt-2 flex flex-wrap items-end gap-2">
+                      <select name="kind" aria-label={t.sell.orders.kindLabel} className="input w-auto">
+                        {ORDER_MESSAGE_KINDS.map((k) => <option key={k} value={k}>{t.sell.orders.kind[k]}</option>)}
+                      </select>
+                      <label className="sr-only" htmlFor={`msg-${s.id}`}>{t.sell.orders.message}</label>
+                      <input id={`msg-${s.id}`} name="body" required maxLength={2000} className="input min-w-0 flex-1" placeholder={t.sell.orders.message} />
+                      <button type="submit" className="btn btn-dark px-3 py-1.5 text-sm">{t.sell.orders.send}</button>
+                    </SellerForm>
+                  </details>
                 </div>
               );
             })}

@@ -403,3 +403,9 @@ export function setUserStatus(ctx: Ctx, actor: Actor | null, userId: string, sta
 export function latestEmail(ctx: Ctx, userId: string, kind: string) {
   return ctx.db.prepare("SELECT * FROM email_outbox WHERE user_id = ? AND kind = ? ORDER BY id DESC LIMIT 1").get(userId, kind) as unknown as import("./mailer").OutboxRow | undefined;
 }
+
+/** Admin: the email outbox, newest first. */
+export function adminEmails(ctx: Ctx, actor: Actor | null, limit = 200) {
+  requireAdmin(actor);
+  return ctx.db.prepare("SELECT * FROM email_outbox ORDER BY id DESC LIMIT ?").all(limit) as unknown as import("./mailer").OutboxRow[];
+}

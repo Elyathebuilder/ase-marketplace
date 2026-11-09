@@ -56,7 +56,7 @@ export default async function ManufacturerPage({ params }: { params: Params }) {
             <div className="rounded-2xl bg-paper p-1.5"><ManufacturerLogo m={raw} size="lg" /></div>
             <div className="pb-1">
               <h1 className="text-2xl font-extrabold md:text-3xl">{m.name}</h1>
-              <p className="mt-1 inline-flex items-center gap-1 text-sm text-muted"><MapPin className="h-4 w-4" aria-hidden="true" />{m.city}, {m.region}</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-sm text-muted"><MapPin className="h-4 w-4" aria-hidden="true" />{[m.city, m.region].filter(Boolean).join(", ")}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 md:pb-1">
@@ -71,14 +71,31 @@ export default async function ManufacturerPage({ params }: { params: Params }) {
             <section>
               <div className="flex flex-wrap items-center gap-2">
                 <VerifiedBadge status={m.verification} lang={lang} />
+                {m.sellerType && <span className="chip bg-paper-2 text-ink-2">{t.verification[m.sellerType]}</span>}
                 {m.categories.map((c) => (
                   <Link key={c} href={to(`/categories/${c}`)} className="chip bg-paper-2 text-ink-2 hover:text-red-600">{categoryName(c, getCategory(c)?.name ?? c, lang)}</Link>
                 ))}
               </div>
-              <p className="mt-4 text-lg font-semibold text-ink">{m.tagline}</p>
-              <p className="mt-2 leading-relaxed text-ink-2">{m.description}</p>
+              {m.tagline && <p className="mt-4 text-lg font-semibold text-ink">{m.tagline}</p>}
+              <p className="mt-2 whitespace-pre-line leading-relaxed text-ink-2">{m.description}</p>
+              <div className="mt-4 rounded-xl border border-line bg-surface p-3 text-sm text-ink-2" data-badge-explain>
+                <p className="font-semibold text-ink">{t.verification.explainTitle}</p>
+                <p className="mt-1">{m.verification === "verified" ? t.verification.explainVerified : t.verification.explainApproved}</p>
+              </div>
             </section>
-            <section>
+            {m.photos && m.photos.length > 0 && (
+              <section>
+                <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {m.photos.slice(0, 6).map((src) => (
+                    <li key={src} className="overflow-hidden rounded-xl bg-paper-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- uploads are served by our own permission-checked route */}
+                      <img src={src} alt="" loading="lazy" className="aspect-[4/3] w-full object-cover" />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {m.capabilities.length > 0 && <section>
               <h2 className="text-xl font-bold">{k.capabilities}</h2>
               <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                 {m.capabilities.map((c) => (
@@ -87,26 +104,28 @@ export default async function ManufacturerPage({ params }: { params: Params }) {
                   </li>
                 ))}
               </ul>
-            </section>
-            <section>
-              <h2 className="text-xl font-bold">{k.wholesale}</h2>
-              <p className="mt-2 text-ink-2">{m.wholesale}</p>
-            </section>
+            </section>}
+            {m.wholesale && (
+              <section>
+                <h2 className="text-xl font-bold">{k.wholesale}</h2>
+                <p className="mt-2 text-ink-2">{m.wholesale}</p>
+              </section>
+            )}
           </div>
 
           <aside className="card h-fit p-5">
             <h2 className="text-base font-bold">{k.details}</h2>
             <dl className="mt-3 space-y-3 text-sm">
               <Row icon={<Calendar className="h-4 w-4" />} label={k.established} value={m.yearEstablished ? String(m.yearEstablished) : "—"} />
-              <Row icon={<Users className="h-4 w-4" />} label={k.employees} value={m.employees} />
+              {m.employees && <Row icon={<Users className="h-4 w-4" />} label={k.employees} value={m.employees} />}
               <Row icon={<Mail className="h-4 w-4" />} label={k.email} value={m.contact.email} />
               <Row icon={<Phone className="h-4 w-4" />} label={k.phone} value={m.contact.phone} />
               {m.website && <Row icon={<Globe className="h-4 w-4" />} label={k.website} value={m.website} />}
             </dl>
             {m.social && (
               <p className="mt-4 flex gap-3 text-sm font-semibold text-ink-2">
-                {Object.keys(m.social).map((s) => (
-                  <span key={s} className="capitalize">{s}</span>
+                {Object.entries(m.social).filter(([, url]) => typeof url === "string" && /^https?:\/\//.test(url)).map(([s, url]) => (
+                  <a key={s} href={url as string} target="_blank" rel="noopener noreferrer nofollow" className="capitalize hover:text-red-600">{s}</a>
                 ))}
               </p>
             )}

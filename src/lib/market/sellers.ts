@@ -422,3 +422,9 @@ export function adminSellerList(ctx: Ctx, actor: Actor | null, filter?: string) 
   if (filter === "approved") return rows.filter((r) => isApproved(r.account_status));
   return rows.filter((r) => r.account_status === filter);
 }
+
+/** A seller's display name and city, whatever its status (for order and settlement pages, which outlive approval). */
+export function makerLabel(ctx: Ctx, slug: string, lang: "ka" | "en") {
+  const m = getMaker(ctx, slug);
+  return { name: (lang === "ka" && m?.name_ka) || m?.name || slug, city: m?.city ?? "" };
+}

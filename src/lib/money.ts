@@ -29,5 +29,8 @@ export function percentOf(amount: Tetri, basisPoints: number): Tetri {
 /** "1,080.00 ₾" in English, "1 080,00 ₾" in Russian … Only the display changes by language, never the amount. */
 export const formatTetri = (t: Tetri, lang?: Lang): string => `${t < 0 ? "−" : ""}${numberFormat(lang, 2, 2).format(Math.abs(t) / 100)} ₾`;
 
-/** "5%" or "7,5%" from basis points. */
-export const formatBps = (bps: number, lang?: Lang): string => `${numberFormat(lang, 0, 2).format(bps / 100)}%`;
+/** "5%" or "7,5%" from basis points; Turkish writes the sign first ("%5"). */
+export const formatBps = (bps: number, lang?: Lang): string => {
+  const n = numberFormat(lang, 0, 2).format(bps / 100);
+  return lang === "tr" ? `%${n}` : `${n}%`;
+};

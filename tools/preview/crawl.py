@@ -8,9 +8,16 @@ def name_for(path):
     if p.query:
         n+='__'+'_'.join(f'{k}-{v}' for k,v in urllib.parse.parse_qsl(p.query))
     return re.sub(r'[^A-Za-z0-9_.-]','-',n)+'.html'
-start=['/','/en','/register','/en/register','/register/customer','/en/register/customer','/register/seller','/en/register/seller','/signin','/en/signin','/seller','/en/seller','/cart','/en/cart','/admin/delivery','/en/admin/delivery']
+LANGS=['ka','en','ru','tr','hy']  # same order as src/i18n/config.ts; ka has no prefix
+PREFIX={l:('' if l=='ka' else '/'+l) for l in LANGS}
+def lang_of(u):
+    m=re.match(r'^/(en|ru|tr|hy)(?=/|$)',u)
+    return m.group(1) if m else 'ka'
+def strip(u):
+    l=lang_of(u); return (u[len(PREFIX[l]):] or '/') if l!='ka' else u
+start=[(PREFIX[l]+p if p!='/' else (PREFIX[l] or '/')) for p in ['/','/register','/register/customer','/register/seller','/signin','/seller','/cart','/admin/delivery'] for l in LANGS]
 # Pages that need a server (accounts, forms, real orders) are not copied; the preview has its own TEST journey.
-SKIP=re.compile(r'^(/en)?/(reset-password|account|checkout|test-order|admin(?!/delivery$)|seller/(products/|orders/|quotes/))')
+SKIP=re.compile(r'^(/(?:en|ru|tr|hy))?/(reset-password|account|checkout|test-order|admin(?!/delivery$)|seller/(products/|orders/|quotes/))')
 SECRET=os.environ.get('ASE_SESSION_SECRET','')
 def cookie(user):
     # Same format as src/lib/market/auth.ts: userId.version.expiry.signature
@@ -22,7 +29,7 @@ def fetch(u):
     path=urllib.parse.urlsplit(u).path
     if path.endswith('/admin/delivery'): req.add_header('Cookie',cookie('admin-tamar'))
     # The seller portal is shown read-only, as the demo seller sees it.
-    elif re.match(r'^(/en)?/seller', path): req.add_header('Cookie',cookie('maker-imereti-timber-works'))
+    elif re.match(r'^(/(?:en|ru|tr|hy))?/seller', path): req.add_header('Cookie',cookie('maker-imereti-timber-works'))
     return urllib.request.urlopen(req).read().decode()
 seen={}; queue=list(start); css_cache={}; assets=set()
 while queue:
@@ -39,7 +46,7 @@ while queue:
         if not p.query:
             if href not in seen: queue.append(href)
         # filtered views: only the ones linked from the two home pages
-        elif u in ('/','/en') and not p.path.endswith('/b2b') and href not in seen: queue.append(href)
+        elif u in ('/','/en','/ru','/tr','/hy') and not p.path.endswith('/b2b') and href not in seen: queue.append(href)
 print('pages',len(seen))
 def rewrite(u, body):
     def css(m):
@@ -60,13 +67,12 @@ def rewrite(u, body):
         return 'href="'+name_for(tgt)+frag+'"'
     body=re.sub(r'href="(/[^"#]*)(#[^"]*)?"',lnk,body)
     body=re.sub(r'action="(/[^"]*)"',lambda m:'action="'+name_for(m.group(1))+'"',body)
-    lang='en' if u=='/en' or u.startswith('/en/') else 'ka'
-    path=u[3:] or '/' if lang=='en' else u
+    lang=lang_of(u); path=strip(u)
     inject='<script>window.__ASE='+json.dumps({'lang':lang,'path':path})+';window.__ASE_CATALOG_URL="catalog.json"</script><script src="islands.js" defer></script>'
     body=body.replace('</body>', inject+'</body>',1)
     return body
 # The demo catalog for the browser-only parts (cart, checkout, delivery estimates).
-slugs=sorted({m for b in seen.values() for m in re.findall(r'href="/(?:en/)?products/([a-z0-9-]+)"', b)})
+slugs=sorted({m for b in seen.values() for m in re.findall(r'href="/(?:(?:en|ru|tr|hy)/)?products/([a-z0-9-]+)"', b)})
 catalog={'products':[],'makers':{}}
 for i in range(0,len(slugs),100):
     d=json.loads(urllib.request.urlopen(BASE+'/api/catalog?slugs='+','.join(slugs[i:i+100])).read())
@@ -87,13 +93,16 @@ def journey(src_url, path, island, title):
     h=pages[src_url]
     h=re.sub(r'(<main id="main"[^>]*>).*?(</main>)', lambda m: m.group(1)+'<div data-island="'+island+'"></div>'+m.group(2), h, count=1, flags=re.S)
     h=re.sub(r'<title>.*?</title>','<title>'+title+'</title>',h,count=1,flags=re.S)
-    lang='en' if src_url.startswith('/en') else 'ka'
+    lang=lang_of(src_url)
     h=re.sub(r'window.__ASE=\{[^<]*\}','window.__ASE='+json.dumps({'lang':lang,'path':path}),h)
-    open(os.path.join(OUT,name_for(('/en' if lang=='en' else '')+path)),'w').write(h)
-journey('/cart','/checkout','local-checkout','შეკვეთის გაფორმება · ASE')
-journey('/en/cart','/checkout','local-checkout','Checkout · ASE')
-journey('/cart','/test-order','local-order','სატესტო შეკვეთა · ASE')
-journey('/en/cart','/test-order','local-order','Test order · ASE')
+    open(os.path.join(OUT,name_for(PREFIX[lang]+path)),'w').write(h)
+TITLES={
+  'ka':('შეკვეთის გაფორმება','სატესტო შეკვეთა'), 'en':('Checkout','Test order'),
+  'ru':('Оформление заказа','Тестовый заказ'), 'tr':('Siparişi tamamla','Test siparişi'), 'hy':('Պատվերի ձևակերպում','Թեստային պատվեր'),
+}
+for l in LANGS:
+    journey(PREFIX[l]+'/cart','/checkout','local-checkout',TITLES[l][0]+' · ASE')
+    journey(PREFIX[l]+'/cart','/test-order','local-order',TITLES[l][1]+' · ASE')
 # Main artifact page: the Georgian home page without its html/head wrapper.
 h=pages['/']
 styles=''.join(re.findall(r'<style>.*?</style>',h,flags=re.S))

@@ -34,7 +34,7 @@ export function AccountMenu() {
           <UserRound className="h-5 w-5" aria-hidden="true" />
           <span className="hidden sm:inline">{a.signIn}</span>
         </Link>
-        <Link href={href(lang, "/register")} className="btn btn-primary px-2.5 py-1.5 text-sm sm:px-3">
+        <Link href={href(lang, "/register")} className="btn btn-primary px-2 py-1.5 text-[0.8125rem] min-[400px]:px-2.5 min-[400px]:text-sm sm:px-3">
           {a.register}
         </Link>
       </div>

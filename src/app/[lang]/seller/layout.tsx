@@ -21,7 +21,7 @@ type Params = Promise<{ lang: string }>;
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { lang } = await params;
   const title = getDict(isLang(lang) ? lang : "ka").meta.sellerTitle;
-  return { title: { default: title, template: `%s · ${title} · ASE` }, robots: { index: false } };
+  return { title: { default: title, template: `%s · ${title} · Bazari` }, robots: { index: false } };
 }
 
 /**

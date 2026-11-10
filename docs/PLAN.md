@@ -1,4 +1,4 @@
-# ASE implementation plan
+# Bazari implementation plan
 
 ## Where we stopped (9 November 2026)
 
@@ -79,7 +79,7 @@ Rental features: none exist in ASE (they belong to the separate amartani-propert
 | 5 | Delivery time options: "as soon as possible" vs set day and time window. Does a set time cost extra? | Phase 5 | From the interaction-logic document |
 | 6 | Who delivers: ASE's own couriers or partner transport companies | Phase 5 | Affects vehicle capacities and rates |
 | 7 | Native review of the Georgian, Russian, Turkish and Armenian text | Before launch | Georgian is the default; English is second |
-| 8 | Brand name and logo | Before launch | "ASE" with a red cross mark is a placeholder; payment pages say "Amartani" |
+| 8 | ~~Brand name and logo~~ | Decided | **Bazari**, with the ornamented B logo (`public/brand/`, built by `tools/brand/build_logo.py`). Order numbers keep the `ASE-` prefix so existing orders and references stay valid; the bank account holder is whatever the admin enters in settings |
 | 9 | Amartani's real bank account, payment deadline, and legal review of holding customer money before paying manufacturers | Before launch | The demo IBAN is fake. The ledger is internal bookkeeping, not escrow |
 | 10 | Email provider account (Resend recommended: free up to 3,000 emails a month) | Before launch | Emails wait in the outbox until the key is set; no paid SMS/WhatsApp without your approval |
 

@@ -29,7 +29,7 @@ export const DEMO_CUSTOMERS: Actor[] = [
   { id: "cust-nino", role: "customer", name: "Nino Kapanadze" },
   { id: "cust-giorgi", role: "customer", name: "Giorgi Beridze" },
 ];
-export const DEMO_ADMIN: Actor = { id: "admin-tamar", role: "admin", name: "Tamar (ASE admin)" };
+export const DEMO_ADMIN: Actor = { id: "admin-tamar", role: "admin", name: "Tamar (Bazari admin)" };
 
 export const makerUserId = (slug: string) => `maker-${slug}`;
 

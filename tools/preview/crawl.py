@@ -101,13 +101,13 @@ TITLES={
   'ru':('Оформление заказа','Тестовый заказ'), 'tr':('Siparişi tamamla','Test siparişi'), 'hy':('Պատվերի ձևակերպում','Թեստային պատվեր'),
 }
 for l in LANGS:
-    journey(PREFIX[l]+'/cart','/checkout','local-checkout',TITLES[l][0]+' · ASE')
-    journey(PREFIX[l]+'/cart','/test-order','local-order',TITLES[l][1]+' · ASE')
+    journey(PREFIX[l]+'/cart','/checkout','local-checkout',TITLES[l][0]+' · Bazari')
+    journey(PREFIX[l]+'/cart','/test-order','local-order',TITLES[l][1]+' · Bazari')
 # Main artifact page: the Georgian home page without its html/head wrapper.
 h=pages['/']
 styles=''.join(re.findall(r'<style>.*?</style>',h,flags=re.S))
 html_cls=re.search(r'<html[^>]*class="([^"]*)"',h).group(1)
 body_m=re.search(r'<body[^>]*class="([^"]*)"[^>]*>(.*)</body>',h,flags=re.S)
-main='<title>ASE Marketplace</title>\n'+styles+'\n<div lang="ka" class="'+html_cls+' '+body_m.group(1)+'">'+body_m.group(2)+'</div>'
+main='<title>Bazari</title>\n'+styles+'\n<div lang="ka" class="'+html_cls+' '+body_m.group(1)+'">'+body_m.group(2)+'</div>'
 open(os.path.join(OUT,'ase-marketplace.html'),'w').write(main)
 print('files',len(os.listdir(OUT)),'fonts',len(assets))

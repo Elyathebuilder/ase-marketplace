@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { I18nProvider } from "@/i18n/client";
-import { LANGS, getDict, href, isLang } from "@/i18n";
+import { LANGS, LOCALE, getDict, href, isLang } from "@/i18n";
 import { fontVariables } from "../fonts";
 import "../globals.css";
 
@@ -16,8 +16,10 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const { lang } = await params;
   const t = getDict(isLang(lang) ? lang : "ka");
   return {
-    title: { default: t.meta.title, template: "%s · ASE" },
+    title: { default: t.meta.title, template: "%s · Bazari" },
     description: t.meta.description,
+    applicationName: "Bazari",
+    openGraph: { siteName: "Bazari", type: "website", images: [{ url: "/brand/bazari-og.png", width: 1200, height: 630, alt: "Bazari" }], locale: LOCALE[isLang(lang) ? lang : "ka"].replace("-", "_") },
     alternates: { languages: Object.fromEntries(LANGS.map((l) => [l, href(l, "/")])) },
   };
 }

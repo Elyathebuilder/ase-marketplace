@@ -13,18 +13,18 @@ export function SiteHeader({ lang }: { lang: Lang }) {
   const t = getDict(lang);
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-paper/95 backdrop-blur supports-[backdrop-filter]:bg-paper/85">
-      <div className="container-page flex items-center gap-3 py-3 md:gap-6">
+      <div className="container-page flex items-center gap-1 py-3 min-[400px]:gap-2 sm:gap-3 md:gap-6">
         <MobileMenu />
         <Logo lang={lang} />
-        <div className="hidden flex-1 md:block">
+        <div className="hidden min-w-0 flex-1 md:block">
           <SearchBar lang={lang} />
         </div>
         <div className="ml-auto flex items-center gap-1 md:ml-0">
           <Link href={href(lang, "/b2b#rfq")} className="btn btn-ghost hidden text-sm xl:inline-flex">{t.header.requestQuote}</Link>
           <AccountMenu />
           <CartButton />
-          {/* On phones this link is in the menu, so "Register" fits in the header. */}
-          <Link href={href(lang, "/about#sell")} className="btn btn-dark hidden px-3.5 text-sm sm:inline-flex">
+          {/* Below the lg breakpoint this link is in the menu, so the header row fits in every language. */}
+          <Link href={href(lang, "/about#sell")} className="btn btn-dark hidden px-3.5 text-sm lg:inline-flex">
             <Factory className="h-4 w-4" aria-hidden="true" />
             {t.header.sell}
           </Link>

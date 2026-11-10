@@ -8,9 +8,9 @@ def name_for(path):
     if p.query:
         n+='__'+'_'.join(f'{k}-{v}' for k,v in urllib.parse.parse_qsl(p.query))
     return re.sub(r'[^A-Za-z0-9_.-]','-',n)+'.html'
-start=['/','/en','/seller','/en/seller','/cart','/en/cart','/admin/delivery','/en/admin/delivery']
+start=['/','/en','/register','/en/register','/register/customer','/en/register/customer','/register/seller','/en/register/seller','/signin','/en/signin','/seller','/en/seller','/cart','/en/cart','/admin/delivery','/en/admin/delivery']
 # Pages that need a server (accounts, forms, real orders) are not copied; the preview has its own TEST journey.
-SKIP=re.compile(r'^(/en)?/(signin|register|forgot-password|reset-password|account|checkout|test-order|admin(?!/delivery$)|seller/(products/|orders/|quotes/))')
+SKIP=re.compile(r'^(/en)?/(reset-password|account|checkout|test-order|admin(?!/delivery$)|seller/(products/|orders/|quotes/))')
 SECRET=os.environ.get('ASE_SESSION_SECRET','')
 def cookie(user):
     # Same format as src/lib/market/auth.ts: userId.version.expiry.signature

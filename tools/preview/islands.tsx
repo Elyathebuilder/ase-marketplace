@@ -11,6 +11,7 @@ import { CartView } from "@/components/cart/CartView";
 import { DeliveryEstimator } from "@/components/DeliveryEstimator";
 import { PurchasePanel } from "@/components/PurchasePanel";
 import { I18nProvider } from "@/i18n/client";
+import { getDict } from "@/i18n";
 import type { Lang } from "@/i18n/config";
 import { getAllProducts, getManufacturers, getProduct, manufacturerOf, setCatalog } from "./shims/catalog";
 import { LocalCheckout, LocalOrderPage } from "./LocalJourney";
@@ -71,9 +72,24 @@ if (p) {
 mount('[data-island="local-checkout"]', <LocalCheckout />);
 mount('[data-island="local-order"]', <LocalOrderPage />);
 
-// No accounts on the static preview: hide the sign-in link and the admin menu.
-mount('[data-island="account"]', <></>);
+// No accounts on the static preview: the sign-in and registration pages are shown so they can be
+// looked at, but their forms can't be sent (there is no server). The admin menu is hidden.
 mount('[data-island="admin-nav"]', <></>);
+if (/^\/(signin|register|forgot-password)/.test(ctx.path)) {
+  const note = document.createElement("p");
+  note.setAttribute("role", "status");
+  note.className = "container-page mt-4 rounded-lg border border-[#f0dcb0] bg-warn-50 px-3 py-2 text-sm text-warn";
+  note.textContent = getDict(ctx.lang).market.account.previewNote;
+  document.querySelector("main")?.prepend(note);
+  document.addEventListener(
+    "submit",
+    (e) => {
+      e.preventDefault();
+      note.scrollIntoView({ behavior: "smooth", block: "center" });
+    },
+    true,
+  );
+}
 }
 
 // The demo catalog is a file next to the pages (no server); load it, then mount the islands.

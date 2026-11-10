@@ -29,10 +29,15 @@ export function AccountMenu() {
 
   if (!me?.user)
     return (
-      <Link href={href(lang, "/signin")} className="btn btn-ghost px-3 text-sm" data-island="account">
-        <UserRound className="h-5 w-5" aria-hidden="true" />
-        <span className="hidden sm:inline">{a.signIn}</span>
-      </Link>
+      <div className="flex items-center gap-1" data-island="account">
+        <Link href={href(lang, "/signin")} className="btn btn-ghost px-2 text-sm sm:px-3" aria-label={a.signIn}>
+          <UserRound className="h-5 w-5" aria-hidden="true" />
+          <span className="hidden sm:inline">{a.signIn}</span>
+        </Link>
+        <Link href={href(lang, "/register")} className="btn btn-primary px-2.5 py-1.5 text-sm sm:px-3">
+          {a.register}
+        </Link>
+      </div>
     );
 
   const home = me.user.role === "customer" ? "/account" : me.user.role === "manufacturer" ? "/seller/orders" : "/admin";

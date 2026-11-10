@@ -46,7 +46,6 @@ export const en = {
   header: {
     requestQuote: "Request a quote",
     sell: "Sell on ASE",
-    sellShort: "Sell",
     tagline: "Made in Georgia · Direct from manufacturers",
     cart: "Cart",
   },

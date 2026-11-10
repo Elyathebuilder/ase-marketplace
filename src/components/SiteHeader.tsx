@@ -23,10 +23,10 @@ export function SiteHeader({ lang }: { lang: Lang }) {
           <Link href={href(lang, "/b2b#rfq")} className="btn btn-ghost hidden text-sm xl:inline-flex">{t.header.requestQuote}</Link>
           <AccountMenu />
           <CartButton />
-          <Link href={href(lang, "/about#sell")} className="btn btn-dark px-3.5 text-sm">
+          {/* On phones this link is in the menu, so "Register" fits in the header. */}
+          <Link href={href(lang, "/about#sell")} className="btn btn-dark hidden px-3.5 text-sm sm:inline-flex">
             <Factory className="h-4 w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">{t.header.sell}</span>
-            <span className="sm:hidden">{t.header.sellShort}</span>
+            {t.header.sell}
           </Link>
         </div>
       </div>

@@ -8,6 +8,8 @@ export const marketKa: Dict["market"] = {
   roles: { customer: "მყიდველი", manufacturer: "მწარმოებელი", admin: "ადმინისტრატორი" },
   account: {
     signIn: "შესვლა",
+    register: "რეგისტრაცია",
+    previewNote: "ეს არის გადახედვის ვერსია სერვერის გარეშე, ამიტომ აქ ანგარიშის შექმნა და შესვლა შეუძლებელია. ნამდვილ საიტზე ეს ფორმა ანგარიშს ქმნის.",
     signOut: "გასვლა",
     myOrders: "ჩემი შეკვეთები",
     notifications: "შეტყობინებები",

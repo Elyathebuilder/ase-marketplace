@@ -6,6 +6,8 @@ export const marketEn = {
   roles: { customer: "Customer", manufacturer: "Manufacturer", admin: "Administrator" },
   account: {
     signIn: "Sign in",
+    register: "Register",
+    previewNote: "This is a preview without a server, so accounts can't be created or signed in to here. On the live site this form creates the account.",
     signOut: "Sign out",
     myOrders: "My orders",
     notifications: "Notifications",

@@ -47,7 +47,6 @@ export const ka: Dict = {
   header: {
     requestQuote: "ფასის მოთხოვნა",
     sell: "გაყიდე ASE-ზე",
-    sellShort: "გაყიდვა",
     tagline: "დამზადებულია საქართველოში · პირდაპირ მწარმოებლისგან",
     cart: "კალათა",
   },

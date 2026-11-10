@@ -35,6 +35,11 @@ export function MobileMenu() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link href={href(lang, "/about#sell")} className="flex items-center justify-between py-3.5 text-base font-semibold text-red-700">
+                {t.header.sell}
+              </Link>
+            </li>
           </ul>
         </nav>
       )}

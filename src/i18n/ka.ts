@@ -27,6 +27,9 @@ export const ka: Dict = {
     itemsCount: (n) => `${n} პროდუქტი`,
     makersCount: (n) => `${n} მწარმოებელი`,
     language: "ენა",
+    measure: { cm: "სმ", kg: "კგ", km: "კმ", m3: "მ³" },
+    stepCurrent: "(მიმდინარე ეტაპი)",
+    stepDone: "(დასრულებულია)",
     breadcrumb: "ნავიგაციის ბილიკი",
   },
   demo: {
@@ -431,6 +434,7 @@ export const ka: Dict = {
     piece: "ცალი", jar: "ქილა", box: "ყუთი", set: "ნაკრები", unit: "ერთეული", pair: "წყვილი", pack: "შეკვრა",
     pallet: "პალეტი", "m²": "მ²", bar: "ცალი", kit: "ნაკრები", bag: "პაკეტი", kg: "კგ", bucket: "ვედრო",
   },
+  unitForms: {},
   seller: {
     banner: "გამყიდველის პორტალის დემო ვერსია.",
     bannerText: "ნაჩვენებია დიზაინი სადემონსტრაციო მონაცემებით. ღილაკები ჯერ არაფერს ინახავს.",
@@ -715,6 +719,7 @@ export const ka: Dict = {
     lines: "გზავნილის შიგთავსი",
     add: "ხაზის დამატება",
     customerSees: "მომხმარებელი ხედავს მხოლოდ",
+    formula: (base, perKm, space) => `= ${base} + კმ × ${perKm} + max(წონა %, მოცულობა %) × ${space}`,
     vehicleNames: { scooter: "სკუტერი", car: "მსუბუქი ავტომობილი", van: "ფურგონი", truck: "სატვირთო" },
   },
   market: marketKa,

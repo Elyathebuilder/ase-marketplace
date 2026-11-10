@@ -2,7 +2,7 @@
  * Read access to the public catalog (server only): published products of approved sellers,
  * from the marketplace database. Pure rules (prices, categories, URLs) live in catalog-core.ts.
  */
-import { categoryName, makerSearchText, searchText } from "@/i18n";
+import { categoryNames, makerSearchText, searchText } from "@/i18n";
 import { availabilityOf, displayPrice, getCategory, type CatalogFilters } from "./catalog-core";
 import { publicCatalog } from "./market/catalog-store";
 import { market } from "./market/server";
@@ -52,8 +52,8 @@ export function filterProducts(f: CatalogFilters): Product[] {
   const list = getAllProducts().filter((p) => {
     const m = manufacturerOf(p);
     if (q) {
-      // Both languages are searched, so "მუხა" and "oak" find the same table.
-      const hay = [searchText(p), makerSearchText(m), getCategory(p.category)?.name ?? "", categoryName(p.category, "", "ka")]
+      // Every language is searched, so "მუხა", "oak" and "дуб" find the same table.
+      const hay = [searchText(p), makerSearchText(m), getCategory(p.category)?.name ?? "", categoryNames(p.category)]
         .join(" ")
         .toLowerCase();
       if (!q.split(/\s+/).every((word) => hay.includes(word))) return false;

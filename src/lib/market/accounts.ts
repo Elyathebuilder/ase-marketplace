@@ -13,7 +13,7 @@
 import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import { tx } from "./db";
 import { queueEmail } from "./mailer";
-import { getDict, type Lang } from "@/i18n";
+import { getDict, href, isLang, type Lang } from "@/i18n";
 import type { Ctx } from "./service";
 import { MarketError, type Actor } from "./types";
 
@@ -87,6 +87,20 @@ export interface UserRow {
   created_at: string | null;
   session_version: number;
   is_demo: number;
+  /** Chosen language for the site, notifications and emails; NULL = not chosen (Georgian). */
+  preferred_lang: string | null;
+}
+
+/** The account's language, if they chose one. */
+export function userLang(ctx: Ctx, userId: string): Lang | null {
+  const r = ctx.db.prepare("SELECT preferred_lang FROM users WHERE id = ?").get(userId) as { preferred_lang: string | null } | undefined;
+  return isLang(r?.preferred_lang) ? r.preferred_lang : null;
+}
+
+/** Saves the account's language (from the language switcher, the profile page or sign-in). */
+export function setPreferredLang(ctx: Ctx, userId: string, lang: unknown) {
+  if (!isLang(lang)) throw new MarketError("invalid_input");
+  ctx.db.prepare("UPDATE users SET preferred_lang = ? WHERE id = ?").run(lang, userId);
 }
 
 export const getUser = (ctx: Ctx, id: string) => ctx.db.prepare("SELECT * FROM users WHERE id = ?").get(id) as unknown as UserRow | undefined;
@@ -134,14 +148,19 @@ function createUser(ctx: Ctx, role: "customer" | "manufacturer", input: Register
   const id = `${role === "customer" ? "cus" : "sel"}-${randomUUID()}`;
   ctx.db
     .prepare(
-      "INSERT INTO users (id, role, name, first_name, last_name, phone, email, manufacturer_slug, password_hash, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+      "INSERT INTO users (id, role, name, first_name, last_name, phone, email, manufacturer_slug, password_hash, created_at, preferred_lang) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
     )
-    .run(id, role, `${firstName} ${lastName}`, firstName, lastName, phone, email, manufacturerSlug, hashPassword(password), ctx.now().toISOString());
+    .run(id, role, `${firstName} ${lastName}`, firstName, lastName, phone, email, manufacturerSlug, hashPassword(password), ctx.now().toISOString(), isLang(input.lang) ? input.lang : null);
   return { id, email };
 }
 
-/** Email in both languages: the reader may use either. */
-function bilingual(fn: (lang: Lang) => { subject: string; text: string }) {
+/**
+ * An email in the account's chosen language. Accounts that never chose one get Georgian and English
+ * together, as before, so the reader can use either.
+ */
+export function mailFor(ctx: Ctx, userId: string, fn: (lang: Lang) => { subject: string; text: string }) {
+  const lang = userLang(ctx, userId);
+  if (lang) return fn(lang);
   const ka = fn("ka");
   const en = fn("en");
   return { subject: `${ka.subject} / ${en.subject}`, text: `${ka.text}\n\n---\n\n${en.text}` };
@@ -151,8 +170,8 @@ export function sendVerification(ctx: Ctx, userId: string) {
   const u = getUser(ctx, userId);
   if (!u || u.email_verified_at) return;
   const token = issueToken(ctx, u.id, "verify_email", 48);
-  const mail = bilingual((l) => getDict(l).acc.mail.verify(u.first_name ?? u.name));
-  queueEmail(ctx, { userId: u.id, to: u.email, kind: "verify_email", ...mail, link: `/api/auth/verify?token=${token}` });
+  const mail = mailFor(ctx, u.id, (l) => getDict(l).acc.mail.verify(u.first_name ?? u.name));
+  queueEmail(ctx, { userId: u.id, to: u.email, kind: "verify_email", ...mail, link: `/api/auth/verify?token=${token}` });  // the page it opens is in the account's language (see the route)
 }
 
 /** Customer registration. Returns the new user's id; the account must confirm its email before ordering. */
@@ -259,8 +278,8 @@ export function requestPasswordReset(ctx: Ctx, emailRaw: unknown) {
   if (!u || !u.password_hash || u.status === "suspended") return;
   tx(ctx.db, () => {
     const token = issueToken(ctx, u.id, "reset_password", 1);
-    const mail = bilingual((l) => getDict(l).acc.mail.reset(u.first_name ?? u.name));
-    queueEmail(ctx, { userId: u.id, to: u.email, kind: "reset_password", ...mail, link: `/reset-password?token=${token}` });
+    const mail = mailFor(ctx, u.id, (l) => getDict(l).acc.mail.reset(u.first_name ?? u.name));
+    queueEmail(ctx, { userId: u.id, to: u.email, kind: "reset_password", ...mail, link: `${href(userLang(ctx, u.id) ?? "ka", "/reset-password")}?token=${token}` });
   });
 }
 

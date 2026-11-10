@@ -43,6 +43,7 @@ export const admEn = {
     messages: "Messages and internal notes",
     messageLabel: "Message",
     internal: "Internal note (the seller never sees it)",
+    internalTag: "internal",
     send: "Save",
     history: "Status history",
     actions: "Admin actions",

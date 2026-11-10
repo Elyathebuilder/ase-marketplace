@@ -11,12 +11,12 @@ export function CardPrice({ product, lang }: { product: Product; lang: Lang }) {
     return (
       <div>
         <div className="text-lg font-bold text-ink">
-          {formatGel(product.retailPrice)}
+          {formatGel(product.retailPrice, lang)}
           <span className="text-xs font-medium text-muted"> / {product.unit}</span>
         </div>
         {wholesale != null && (
           <div className="text-xs text-muted">
-            {t.wholesaleFrom} <span className="font-semibold text-ink-2">{formatGel(wholesale)}</span>
+            {t.wholesaleFrom} <span className="font-semibold text-ink-2">{formatGel(wholesale, lang)}</span>
           </div>
         )}
       </div>
@@ -26,7 +26,7 @@ export function CardPrice({ product, lang }: { product: Product; lang: Lang }) {
       <div>
         <div className="text-xs text-muted">{t.wholesaleFrom}</div>
         <div className="text-lg font-bold text-ink">
-          {formatGel(wholesale)}
+          {formatGel(wholesale, lang)}
           <span className="text-xs font-medium text-muted"> / {product.unit}</span>
         </div>
       </div>

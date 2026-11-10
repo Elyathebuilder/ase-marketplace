@@ -90,21 +90,21 @@ export default async function SellerOrderPage({ params, searchParams }: { params
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-ink">{itemName(i, lang)}</p>
                       <p className="text-ink-2">
-                        {s.qty}: <strong>{i.qty}</strong> · {s.unitPrice}: <strong>{tetri(i.unit_price_tetri)}</strong> / {unit(i.unit, lang)}
+                        {s.qty}: <strong>{i.qty}</strong> · {s.unitPrice}: <strong>{tetri(i.unit_price_tetri, lang)}</strong> / {unit(i.unit, lang)}
                         {i.pricing && <span className="ml-1 rounded bg-paper-2 px-1.5 py-0.5 text-xs font-semibold">{i.pricing === "wholesale" ? s.wholesale : s.retail}</span>}
                       </p>
                       {options.length > 0 && <p className="text-xs text-ink-2">{s.options}: {options.map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>}
                       {specs.length > 0 && <p className="mt-0.5 text-xs text-muted">{specs.map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>}
                     </div>
-                    <span className="shrink-0 font-semibold tabular-nums">{tetri(i.line_tetri)}</span>
+                    <span className="shrink-0 font-semibold tabular-nums">{tetri(i.line_tetri, lang)}</span>
                   </li>
                 );
               })}
             </ul>
             <dl className="space-y-1 border-t border-line bg-paper-2/50 px-4 py-3 text-sm">
-              <div className="flex justify-between"><dt>{s.yourTotal}</dt><dd className="tabular-nums">{tetri(o.goods)}</dd></div>
-              <div className="flex justify-between text-ink-2"><dt>{s.commission} ({formatBps(o.commissionBps)}, {mk.commissionBase[o.commissionBase]})</dt><dd className="tabular-nums">−{tetri(o.commission)}</dd></div>
-              <div className="flex justify-between font-bold"><dt>{s.settlement}</dt><dd className="tabular-nums">{tetri(o.payable)}</dd></div>
+              <div className="flex justify-between"><dt>{s.yourTotal}</dt><dd className="tabular-nums">{tetri(o.goods, lang)}</dd></div>
+              <div className="flex justify-between text-ink-2"><dt>{s.commission} ({formatBps(o.commissionBps, lang)}, {mk.commissionBase[o.commissionBase]})</dt><dd className="tabular-nums">−{tetri(o.commission, lang)}</dd></div>
+              <div className="flex justify-between font-bold"><dt>{s.settlement}</dt><dd className="tabular-nums">{tetri(o.payable, lang)}</dd></div>
             </dl>
           </section>
 

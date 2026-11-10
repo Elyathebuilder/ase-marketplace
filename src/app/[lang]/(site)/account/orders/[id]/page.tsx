@@ -68,8 +68,8 @@ export default async function CustomerOrderPage({ params, searchParams }: { para
         <section className="card flex flex-wrap items-center gap-3 border-red-200 p-4">
           <Landmark className="h-6 w-6 shrink-0 text-red-600" aria-hidden="true" />
           <div className="min-w-0 flex-1">
-            <h2 className="font-bold">{m.pay.needed}: {tetri(view.due)}</h2>
-            <p className="text-sm text-ink-2">{status === "payment_rejected" ? `${o.rejectedTitle}. ${lastRejection?.note ?? ""}` : partial ? o.partialText(tetri(view.due)) : m.pay.neededText}</p>
+            <h2 className="font-bold">{m.pay.needed}: {tetri(view.due, lang)}</h2>
+            <p className="text-sm text-ink-2">{status === "payment_rejected" ? `${o.rejectedTitle}. ${lastRejection?.note ?? ""}` : partial ? o.partialText(tetri(view.due, lang)) : m.pay.neededText}</p>
           </div>
           <Link href={href(lang, `/account/orders/${order.id}/payment`)} className="btn btn-primary">{m.pay.go}</Link>
         </section>
@@ -116,13 +116,13 @@ export default async function CustomerOrderPage({ params, searchParams }: { para
                       return (
                         <li key={it.id} className="flex justify-between gap-3 px-4 py-2">
                           <span>{it.qty} × {p ? locProduct(p, lang).name : it.product_name}</span>
-                          <span className="tabular-nums">{tetri(it.line_tetri)}</span>
+                          <span className="tabular-nums">{tetri(it.line_tetri, lang)}</span>
                         </li>
                       );
                     })}
                     <li className="flex justify-between gap-3 px-4 py-2 text-muted">
                       <span>{o.delivery}</span>
-                      <span className="tabular-nums">{tetri(s.delivery)}</span>
+                      <span className="tabular-nums">{tetri(s.delivery, lang)}</span>
                     </li>
                   </ul>
                   {s.rejectReason && <p className="border-t border-line px-4 py-2 text-sm text-red-700">{o.reason}: {s.rejectReason}</p>}
@@ -155,12 +155,12 @@ export default async function CustomerOrderPage({ params, searchParams }: { para
           <section className="card p-4">
             <h2 className="text-base font-bold">{o.summary}</h2>
             <dl className="mt-3 space-y-1.5 text-sm">
-              <div className="flex justify-between"><dt className="text-ink-2">{o.subtotal}</dt><dd className="tabular-nums">{tetri(order.goods_tetri)}</dd></div>
-              <div className="flex justify-between"><dt className="text-ink-2">{o.delivery}</dt><dd className="tabular-nums">{tetri(order.delivery_tetri)}</dd></div>
-              <div className="flex justify-between border-t border-line pt-1.5 font-bold"><dt>{o.total}</dt><dd className="tabular-nums">{tetri(order.total_tetri)}</dd></div>
-              <div className="flex justify-between"><dt className="text-ink-2">{o.received}</dt><dd className="tabular-nums">{tetri(view.received)}</dd></div>
-              {view.refunded > 0 && <div className="flex justify-between"><dt className="text-ink-2">{o.refunded}</dt><dd className="tabular-nums">{tetri(view.refunded)}</dd></div>}
-              {view.due > 0 && <div className="flex justify-between font-semibold text-red-700"><dt>{o.due}</dt><dd className="tabular-nums">{tetri(view.due)}</dd></div>}
+              <div className="flex justify-between"><dt className="text-ink-2">{o.subtotal}</dt><dd className="tabular-nums">{tetri(order.goods_tetri, lang)}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-2">{o.delivery}</dt><dd className="tabular-nums">{tetri(order.delivery_tetri, lang)}</dd></div>
+              <div className="flex justify-between border-t border-line pt-1.5 font-bold"><dt>{o.total}</dt><dd className="tabular-nums">{tetri(order.total_tetri, lang)}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-2">{o.received}</dt><dd className="tabular-nums">{tetri(view.received, lang)}</dd></div>
+              {view.refunded > 0 && <div className="flex justify-between"><dt className="text-ink-2">{o.refunded}</dt><dd className="tabular-nums">{tetri(view.refunded, lang)}</dd></div>}
+              {view.due > 0 && <div className="flex justify-between font-semibold text-red-700"><dt>{o.due}</dt><dd className="tabular-nums">{tetri(view.due, lang)}</dd></div>}
             </dl>
             <p className="mt-3 text-xs text-muted">{o.deliverTo}: {order.delivery_name}, {order.delivery_address}, {place(order.delivery_city, lang)}</p>
           </section>
@@ -172,8 +172,8 @@ export default async function CustomerOrderPage({ params, searchParams }: { para
                 {payments.filter((p) => p.submittedAt).map((p) => (
                   <li key={p.id} className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2"><span className="font-semibold">{p.id}</span><Status value={p.status} labels={m.paymentStatus} /></div>
-                    <p className="text-ink-2">{o.reportedAmount}: {tetri(p.reported)} · {p.reportedDate} · {p.reference}</p>
-                    {p.received != null && <p className="text-ink-2">{o.receivedAmount}: {tetri(p.received)}</p>}
+                    <p className="text-ink-2">{o.reportedAmount}: {tetri(p.reported, lang)} · {p.reportedDate} · {p.reference}</p>
+                    {p.received != null && <p className="text-ink-2">{o.receivedAmount}: {tetri(p.received, lang)}</p>}
                     {p.receiptFile && (
                       <a href={`/api/files/${p.receiptFile}`} className="inline-flex items-center gap-1 text-red-600 hover:underline" target="_blank" rel="noreferrer">
                         <Paperclip className="h-3.5 w-3.5" aria-hidden="true" /> {p.receiptName ?? o.receiptFile}
@@ -191,7 +191,7 @@ export default async function CustomerOrderPage({ params, searchParams }: { para
               <ul className="mt-3 space-y-2 text-sm">
                 {refunds.map((r) => (
                   <li key={r.id}>
-                    <div className="flex flex-wrap items-center gap-2"><span className="font-semibold tabular-nums">{tetri(r.amount)}</span><Status value={r.status} labels={m.refundStatus} /></div>
+                    <div className="flex flex-wrap items-center gap-2"><span className="font-semibold tabular-nums">{tetri(r.amount, lang)}</span><Status value={r.status} labels={m.refundStatus} /></div>
                     <p className="text-ink-2">{r.reason}{r.reference ? ` · ${r.reference} · ${r.date}` : ""}</p>
                   </li>
                 ))}

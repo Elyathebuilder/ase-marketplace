@@ -51,9 +51,9 @@ export default async function AdminSettlements({ params, searchParams }: { param
                   <span className="block text-xs text-muted">{m.shipmentStatus[r.fulfillment_status]}</span>
                   {r.order_hold && <span className="chip mt-1 bg-warn-50 text-warn">{s.orderHeld}</span>}
                 </td>
-                <td className="px-3 py-2 tabular-nums">{tetri(r.goods_tetri)}</td>
-                <td className="px-3 py-2 tabular-nums">{tetri(r.commission_tetri)}<span className="block text-xs text-muted">{formatBps(r.commission_bps)} · {m.commissionBase[r.commission_base]}</span></td>
-                <td className="px-3 py-2 font-semibold tabular-nums">{tetri(r.payable_tetri)}</td>
+                <td className="px-3 py-2 tabular-nums">{tetri(r.goods_tetri, lang)}</td>
+                <td className="px-3 py-2 tabular-nums">{tetri(r.commission_tetri, lang)}<span className="block text-xs text-muted">{formatBps(r.commission_bps, lang)} · {m.commissionBase[r.commission_base]}</span></td>
+                <td className="px-3 py-2 font-semibold tabular-nums">{tetri(r.payable_tetri, lang)}</td>
                 <td className="px-3 py-2 text-xs">{r.account_holder}<span className="block text-muted">{r.bank_name}</span><span className="block font-mono">{r.iban}</span></td>
                 <td className="px-3 py-2">
                   <Status value={r.status} labels={m.payoutStatus} />

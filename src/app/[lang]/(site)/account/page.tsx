@@ -66,7 +66,7 @@ export default async function AccountPage({ params }: { params: Params }) {
                     <span className="font-semibold">{m.orders.order(o.id)}</span>
                     <Status value={o.status} labels={m.orderStatus} />
                     {o.is_test === 1 && <TestTag lang={lang} />}
-                    <span className="ml-auto text-sm font-semibold tabular-nums">{tetri(o.total_tetri)}</span>
+                    <span className="ml-auto text-sm font-semibold tabular-nums">{tetri(o.total_tetri, lang)}</span>
                   </Link>
                 </li>
               ))}

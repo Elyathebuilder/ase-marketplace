@@ -62,7 +62,7 @@ export default async function PaymentPage({ params, searchParams }: { params: Pa
             </p>
           )}
           {order.status === "awaiting_payment" && v.received > 0 && (
-            <p className="rounded-lg bg-warn-50 px-3 py-2 text-sm text-warn"><strong>{m.order.partialTitle}.</strong> {m.order.partialText(tetri(v.due))}</p>
+            <p className="rounded-lg bg-warn-50 px-3 py-2 text-sm text-warn"><strong>{m.order.partialTitle}.</strong> {m.order.partialText(tetri(v.due, lang))}</p>
           )}
           <PaymentInstructions lang={lang} orderId={order.id} due={v.due} bank={v.bank} deadline={order.payment_deadline} isTest={isTest} />
           <ActionForm op="submitPayment" id={order.id} back={self} files className="card p-4 md:p-5">

@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { CheckoutForm, type CheckoutDetails } from "@/components/market/CheckoutForm";
 import { CheckoutSteps, Confirmation, OrderSummary, OrderTimeline, PaymentFields, PaymentInstructions, TestBanner, TestTag, type SummaryShipment } from "@/components/market/journey";
-import { href, locMaker, locProduct } from "@/i18n";
+import { href, locMaker, locProduct, type Lang } from "@/i18n";
 import { useI18n } from "@/i18n/client";
 import { clearCart } from "@/lib/cart";
 import { quoteCartDelivery } from "@/lib/cart-delivery";
@@ -48,7 +48,7 @@ function save(orders: LocalOrder[]) {
     /* storage blocked: the order still shows until the page is left */
   }
 }
-const go = (lang: "ka" | "en", path: string) => window.location.assign(toFile(href(lang, path)));
+const go = (lang: Lang, path: string) => window.location.assign(toFile(href(lang, path)));
 
 export function LocalCheckout() {
   const { lang, t } = useI18n();

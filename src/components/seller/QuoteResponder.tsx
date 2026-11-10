@@ -7,7 +7,7 @@ import { useI18n } from "@/i18n/client";
 
 /** Quotation form. In the preview it calculates the total but sends nothing. */
 export function QuoteResponder({ qty, unit, unitPlural, suggested }: { qty: number; unit: string; unitPlural: string; suggested?: number }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const f = t.seller.quote.form;
   const [price, setPrice] = useState(suggested ? String(suggested) : "");
   const [sent, setSent] = useState(false);
@@ -18,7 +18,7 @@ export function QuoteResponder({ qty, unit, unitPlural, suggested }: { qty: numb
     return (
       <div className="flex flex-col items-start gap-2 rounded-xl bg-ok-50 p-4 text-sm text-ok">
         <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-        <p>{f.sentPreview(formatGel(unitPrice * qty))}</p>
+        <p>{f.sentPreview(formatGel(unitPrice * qty, lang))}</p>
         <button type="button" className="font-semibold underline" onClick={() => setSent(false)}>{f.edit}</button>
       </div>
     );
@@ -56,7 +56,7 @@ export function QuoteResponder({ qty, unit, unitPlural, suggested }: { qty: numb
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 sm:col-span-2">
         <p className="text-sm text-ink-2">
-          {f.totalFor(qty, unitPlural)} <span className="font-bold tabular-nums text-ink">{valid ? formatGel(unitPrice * qty) : "—"}</span>
+          {f.totalFor(qty, unitPlural)} <span className="font-bold tabular-nums text-ink">{valid ? formatGel(unitPrice * qty, lang) : "—"}</span>
         </p>
         <div className="flex gap-2">
           <button type="button" className="btn btn-outline" onClick={() => setSent(false)}>{f.decline}</button>

@@ -12,13 +12,14 @@
 import { randomBytes } from "node:crypto";
 import { getCategory } from "../catalog-core";
 import { PLACES } from "../places";
-import { adminAction } from "./accounts";
+import { adminAction, mailFor, userLang } from "./accounts";
 import { bumpCatalog, isApproved, type MakerRow } from "./catalog-store";
 import { tx } from "./db";
 import { queueEmail } from "./mailer";
 import { notificationText } from "./notification-text";
 import type { Ctx } from "./service";
 import { MarketError, type Actor } from "./types";
+import { href, type Lang } from "@/i18n/config";
 
 export const ACCOUNT_STATUSES = ["draft", "pending_review", "under_review", "info_required", "approved_company", "approved_independent", "rejected", "suspended"] as const;
 export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
@@ -126,10 +127,15 @@ export function notifyUser(ctx: Ctx, userId: string, kind: string, params: Recor
 export function emailNotification(ctx: Ctx, userId: string, kind: string, orderId: string | null, params: Record<string, unknown>) {
   const u = ctx.db.prepare("SELECT email, email_verified_at, status FROM users WHERE id = ?").get(userId) as { email: string; email_verified_at: string | null; status: string } | undefined;
   if (!u || !u.email_verified_at || u.status !== "active") return;
-  const ka = notificationText("ka", kind, orderId, params);
-  const en = notificationText("en", kind, orderId, params);
-  if (ka === kind) return; // no text for this kind: nothing useful to email
-  queueEmail(ctx, { userId, to: u.email, kind: `notify:${kind}`, subject: `ASE: ${en}`.slice(0, 160), text: `${ka}\n\n---\n\n${en}`, link: typeof params.link === "string" ? params.link : null });
+  if (notificationText("en", kind, orderId, params) === kind) return; // no text for this kind: nothing useful to email
+  // Written in the person's chosen language (Georgian and English together if they never chose one).
+  const mail = mailFor(ctx, userId, (l) => {
+    const text = notificationText(l, kind, orderId, params);
+    return { subject: `ASE: ${text}`.slice(0, 160), text };
+  });
+  const lang = userLang(ctx, userId) ?? "ka";
+  const link = typeof params.link === "string" ? href(lang, params.link) : null;
+  queueEmail(ctx, { userId, to: u.email, kind: `notify:${kind}`, subject: mail.subject.slice(0, 160), text: mail.text, link });
 }
 
 export function notifyAdmins(ctx: Ctx, kind: string, params: Record<string, unknown>) {
@@ -424,7 +430,8 @@ export function adminSellerList(ctx: Ctx, actor: Actor | null, filter?: string) 
 }
 
 /** A seller's display name and city, whatever its status (for order and settlement pages, which outlive approval). */
-export function makerLabel(ctx: Ctx, slug: string, lang: "ka" | "en") {
+export function makerLabel(ctx: Ctx, slug: string, lang: Lang) {
   const m = getMaker(ctx, slug);
+  // Only Georgian has its own store name column today; other languages show the main name.
   return { name: (lang === "ka" && m?.name_ka) || m?.name || slug, city: m?.city ?? "" };
 }

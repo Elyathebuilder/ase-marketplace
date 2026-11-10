@@ -1,3 +1,6 @@
+import type { Lang } from "@/i18n/config";
+import { numberFormat } from "./format";
+
 /**
  * Money is stored and calculated in whole tetri (1 ₾ = 100 tetri) as integers,
  * so sums and commissions are exact. Never add or multiply lari as floating-point numbers.
@@ -23,10 +26,8 @@ export function percentOf(amount: Tetri, basisPoints: number): Tetri {
   return Math.floor((amount * basisPoints + 5000) / 10000);
 }
 
-const fmt = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/** "1,080.00 ₾" in English, "1 080,00 ₾" in Russian … Only the display changes by language, never the amount. */
+export const formatTetri = (t: Tetri, lang?: Lang): string => `${t < 0 ? "−" : ""}${numberFormat(lang, 2, 2).format(Math.abs(t) / 100)} ₾`;
 
-/** "1,080.00 ₾" */
-export const formatTetri = (t: Tetri): string => `${t < 0 ? "−" : ""}${fmt.format(Math.abs(t) / 100)} ₾`;
-
-/** "5%" or "7.5%" from basis points. */
-export const formatBps = (bps: number): string => `${bps / 100}%`;
+/** "5%" or "7,5%" from basis points. */
+export const formatBps = (bps: number, lang?: Lang): string => `${numberFormat(lang, 0, 2).format(bps / 100)}%`;

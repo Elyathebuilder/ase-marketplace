@@ -35,8 +35,8 @@ export function Catalog({ filters, lockedCategory, lang }: { filters: CatalogFil
   if (f.q) active.push({ label: `“${f.q}”`, href: hrefFor({ q: undefined }) });
   if (f.category && !lockedCategory) active.push({ label: categoryName(f.category, getCategory(f.category)?.name ?? f.category, lang), href: hrefFor({ category: undefined }) });
   if (f.manufacturer) active.push({ label: (() => { const m = getManufacturer(f.manufacturer!); return m ? locMaker(m, lang).name : f.manufacturer!; })(), href: hrefFor({ manufacturer: undefined }) });
-  if (f.min != null) active.push({ label: c.from(formatGel(f.min)), href: hrefFor({ min: undefined }) });
-  if (f.max != null) active.push({ label: c.upTo(formatGel(f.max)), href: hrefFor({ max: undefined }) });
+  if (f.min != null) active.push({ label: c.from(formatGel(f.min, lang)), href: hrefFor({ min: undefined }) });
+  if (f.max != null) active.push({ label: c.upTo(formatGel(f.max, lang)), href: hrefFor({ max: undefined }) });
   if (f.availability) active.push({ label: f.availability === "made_to_order" ? c.madeToOrder : c.inStock, href: hrefFor({ availability: undefined }) });
   if (f.city) active.push({ label: place(f.city, lang), href: hrefFor({ city: undefined }) });
   if (f.tag) active.push({ label: tagName(f.tag, lang), href: hrefFor({ tag: undefined }) });

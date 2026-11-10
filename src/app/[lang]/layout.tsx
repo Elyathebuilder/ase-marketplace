@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { I18nProvider } from "@/i18n/client";
-import { LANGS, getDict, isLang } from "@/i18n";
+import { LANGS, getDict, href, isLang } from "@/i18n";
 import { fontVariables } from "../fonts";
 import "../globals.css";
 
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   return {
     title: { default: t.meta.title, template: "%s · ASE" },
     description: t.meta.description,
-    alternates: { languages: { ka: "/", en: "/en" } },
+    alternates: { languages: Object.fromEntries(LANGS.map((l) => [l, href(l, "/")])) },
   };
 }
 

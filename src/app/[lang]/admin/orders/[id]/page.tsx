@@ -71,7 +71,7 @@ export default async function AdminOrderPage({ params, searchParams }: { params:
           {/* Shipments and settlements */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold">{a.shipments}</h2>
-            <p className="text-xs text-muted">{a.commissionRate(formatBps(order.commission_bps), m.commissionBase[order.commission_base])}</p>
+            <p className="text-xs text-muted">{a.commissionRate(formatBps(order.commission_bps, lang), m.commissionBase[order.commission_base])}</p>
             {v.shipments.map((s) => {
               const row = getMaker(market(), s.manufacturer_slug);
               const maker = { name: (lang === "ka" && row?.name_ka) || row?.name || s.manufacturer_slug, city: row?.city ? place(row.city, lang) : "" };
@@ -88,14 +88,14 @@ export default async function AdminOrderPage({ params, searchParams }: { params:
                   </div>
                   <ul className="divide-y divide-line text-sm">
                     {s.items.map((i) => (
-                      <li key={i.id} className="flex justify-between gap-3 px-4 py-1.5"><span>{i.qty} × {i.product_name} <span className="text-muted">@ {tetri(i.unit_price_tetri)}</span></span><span className="tabular-nums">{tetri(i.line_tetri)}</span></li>
+                      <li key={i.id} className="flex justify-between gap-3 px-4 py-1.5"><span>{i.qty} × {i.product_name} <span className="text-muted">@ {tetri(i.unit_price_tetri, lang)}</span></span><span className="tabular-nums">{tetri(i.line_tetri, lang)}</span></li>
                     ))}
                   </ul>
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-line px-4 py-2 text-sm sm:grid-cols-4">
-                    <div><dt className="text-xs text-muted">{a.fin.goods}</dt><dd className="tabular-nums">{tetri(s.goods_tetri)}</dd></div>
-                    <div><dt className="text-xs text-muted">{a.fin.delivery}</dt><dd className="tabular-nums">{tetri(s.delivery_tetri)}</dd></div>
-                    <div><dt className="text-xs text-muted">{a.fin.commission}</dt><dd className="tabular-nums">{tetri(s.commission_tetri)}</dd></div>
-                    <div><dt className="text-xs text-muted">{a.fin.payable}</dt><dd className="font-semibold tabular-nums">{tetri(s.payable_tetri)}</dd></div>
+                    <div><dt className="text-xs text-muted">{a.fin.goods}</dt><dd className="tabular-nums">{tetri(s.goods_tetri, lang)}</dd></div>
+                    <div><dt className="text-xs text-muted">{a.fin.delivery}</dt><dd className="tabular-nums">{tetri(s.delivery_tetri, lang)}</dd></div>
+                    <div><dt className="text-xs text-muted">{a.fin.commission}</dt><dd className="tabular-nums">{tetri(s.commission_tetri, lang)}</dd></div>
+                    <div><dt className="text-xs text-muted">{a.fin.payable}</dt><dd className="font-semibold tabular-nums">{tetri(s.payable_tetri, lang)}</dd></div>
                   </dl>
                   {s.reject_reason && <p className="border-t border-line px-4 py-2 text-sm text-red-700">{m.order.reason}: {s.reject_reason}</p>}
                   {(step || s.prepare_by) && (
@@ -141,10 +141,10 @@ export default async function AdminOrderPage({ params, searchParams }: { params:
                 {v.payments.map((p) => (
                   <tr key={p.id}>
                     <td className="px-3 py-2"><Link href={href(lang, "/admin/payments")} className="font-semibold text-red-600 hover:underline">{p.id}</Link></td>
-                    <td className="px-3 py-2 tabular-nums">{tetri(p.expected_tetri)}</td>
-                    <td className="px-3 py-2 tabular-nums">{tetri(p.reported_tetri)}</td>
+                    <td className="px-3 py-2 tabular-nums">{tetri(p.expected_tetri, lang)}</td>
+                    <td className="px-3 py-2 tabular-nums">{tetri(p.reported_tetri, lang)}</td>
                     <td className="px-3 py-2 font-mono text-xs">{p.reference ?? "—"}</td>
-                    <td className="px-3 py-2 tabular-nums">{tetri(p.received_tetri)}</td>
+                    <td className="px-3 py-2 tabular-nums">{tetri(p.received_tetri, lang)}</td>
                     <td className="px-3 py-2"><Status value={p.status} labels={m.paymentStatus} /></td>
                     <td className="px-3 py-2">{p.verified_by_name ?? "—"}<span className="block text-xs text-muted">{when(p.verified_at, lang)}</span></td>
                   </tr>
@@ -164,7 +164,7 @@ export default async function AdminOrderPage({ params, searchParams }: { params:
                     <td className="px-3 py-1.5 tabular-nums text-muted">{l.id}</td>
                     <td className="px-3 py-1.5">{m.ledgerKind[l.kind] ?? l.kind}{l.adjusts_entry_id ? <span className="block text-xs text-muted">{a.adjusts(l.adjusts_entry_id)}</span> : null}</td>
                     <td className="px-3 py-1.5 text-xs">{l.fulfillment_id ?? "—"}</td>
-                    <td className={`px-3 py-1.5 font-semibold tabular-nums ${l.amount_tetri < 0 ? "text-red-700" : ""}`}>{tetri(l.amount_tetri)}</td>
+                    <td className={`px-3 py-1.5 font-semibold tabular-nums ${l.amount_tetri < 0 ? "text-red-700" : ""}`}>{tetri(l.amount_tetri, lang)}</td>
                     <td className="px-3 py-1.5 font-mono text-xs">{l.bank_reference ?? "—"}</td>
                     <td className="px-3 py-1.5 text-xs text-ink-2">{l.note ?? ""}</td>
                     <td className="px-3 py-1.5 text-xs">{l.created_by_name}</td>
@@ -221,7 +221,7 @@ export default async function AdminOrderPage({ params, searchParams }: { params:
                   [a.fin.customerOutstanding, f.customerOutstanding],
                 ] as const
               ).map(([label, value]) => (
-                <div key={label} className="flex justify-between gap-3"><dt className="text-ink-2">{label}</dt><dd className="tabular-nums">{tetri(value)}</dd></div>
+                <div key={label} className="flex justify-between gap-3"><dt className="text-ink-2">{label}</dt><dd className="tabular-nums">{tetri(value, lang)}</dd></div>
               ))}
               <div className="flex justify-between gap-3 border-t border-line pt-1.5 font-semibold"><dt>{m.order.payments}</dt><dd><Status value={v.payments.at(-1)?.status ?? "awaiting_payment"} labels={m.paymentStatus} /></dd></div>
             </dl>

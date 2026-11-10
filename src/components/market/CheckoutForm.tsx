@@ -9,6 +9,7 @@ import { useI18n } from "@/i18n/client";
 import { useCart } from "@/lib/cart";
 import { useCartCatalog } from "@/lib/cart-catalog";
 import { quoteCartDelivery } from "@/lib/cart-delivery";
+import { formatTetri } from "@/lib/money";
 import { placeOrderAction } from "@/lib/market/actions";
 import { toTetri } from "@/lib/money";
 import { PLACES } from "@/lib/places";
@@ -187,7 +188,7 @@ export function CheckoutForm({
             {shipments.map((s) => (
               <li key={s.id} className="flex justify-between gap-3 px-3 py-2">
                 <span className="text-ink-2">{t.cart.shipmentFrom(s.maker, s.city)}</span>
-                <span className="shrink-0 font-semibold tabular-nums">{s.delivery ? `${(s.delivery / 100).toFixed(2)} ₾` : t.cart.toConfirm}</span>
+                <span className="shrink-0 font-semibold tabular-nums">{s.delivery ? formatTetri(s.delivery, lang) : t.cart.toConfirm}</span>
               </li>
             ))}
           </ul>

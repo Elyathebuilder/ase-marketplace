@@ -109,6 +109,8 @@ export const accKa: Dict["acc"] = {
     memberSince: (d: string) => `მყიდველი ${d}-დან`,
     unread: (n: number) => `${n} წაუკითხავი`,
     seeAll: "ყველას ნახვა",
+    language: "ენა",
+    languageHint: "შესვლისას საიტი ამ ენაზე გაიხსნება. შეტყობინებები და წერილებიც ამ ენაზე მოგივათ.",
   },
   addresses: {
     title: "მიწოდების მისამართები",

@@ -39,7 +39,7 @@ export default async function AdminRefunds({ params, searchParams }: { params: P
               <td className="px-3 py-2 font-semibold">{x.id}</td>
               <td className="px-3 py-2"><Link href={href(lang, `/admin/orders/${x.order_id}`)} className="text-red-600 hover:underline">{x.order_id}</Link></td>
               <td className="px-3 py-2">{x.customer_name}</td>
-              <td className="px-3 py-2 font-semibold tabular-nums">{tetri(x.amount_tetri)}</td>
+              <td className="px-3 py-2 font-semibold tabular-nums">{tetri(x.amount_tetri, lang)}</td>
               <td className="px-3 py-2 text-ink-2">{x.reason}</td>
               <td className="px-3 py-2"><Status value={x.status} labels={m.refundStatus} /></td>
               <td className="px-3 py-2 font-mono text-xs">{x.reference ?? "—"}</td>

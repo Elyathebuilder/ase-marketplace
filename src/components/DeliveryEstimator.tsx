@@ -56,7 +56,7 @@ export function DeliveryEstimator({ origin, item, defaultQty }: Props) {
         <div className="mt-3" aria-live="polite">
           <p className="flex items-baseline justify-between gap-3">
             <span className="text-sm font-medium text-ink-2">{d.estimated}:</span>
-            <span className="text-lg font-bold text-ink" data-delivery-total>{formatGel(quote.price.total)}</span>
+            <span className="text-lg font-bold text-ink" data-delivery-total>{formatGel(quote.price.total, lang)}</span>
           </p>
           <p className="text-xs text-muted">{d.fromTo(place(origin, lang), place(to, lang))}</p>
         </div>

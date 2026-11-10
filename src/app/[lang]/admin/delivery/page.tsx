@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DeliveryCalculator } from "@/components/admin/DeliveryCalculator";
 import { getDict, isLang } from "@/i18n";
 import { DEFAULT_DELIVERY_SETTINGS } from "@/lib/delivery";
-import { formatGel } from "@/lib/format";
+import { formatGel, formatNumber } from "@/lib/format";
 import { pageLang } from "@/lib/page-lang";
 import { adminOrNull } from "@/lib/market/auth";
 import { getAllProducts, getManufacturers } from "@/lib/catalog";
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
  * Customers only ever see the final estimate. Only administrators can open it (see admin/layout.tsx).
  */
 export default async function AdminDeliveryPage({ params }: { params: Params }) {
-  const { t } = await pageLang(params);
+  const { t, lang } = await pageLang(params);
   if (!(await adminOrNull())) return null;
   const a = t.admin;
   return (
@@ -49,17 +49,17 @@ export default async function AdminDeliveryPage({ params }: { params: Params }) 
                 {DEFAULT_DELIVERY_SETTINGS.vehicles.map((v) => (
                   <tr key={v.id}>
                     <td className="px-4 py-2.5 font-semibold text-ink">{a.vehicleNames[v.id] ?? v.name}</td>
-                    <td className="px-4 py-2.5">{v.maxWeightKg.toLocaleString("en-US")} kg · {v.maxVolumeM3} m³</td>
+                    <td className="px-4 py-2.5">{formatNumber(v.maxWeightKg, lang)} {t.common.measure.kg} · {formatNumber(v.maxVolumeM3, lang)} {t.common.measure.m3}</td>
                     <td className="px-4 py-2.5">{v.interior.lengthCm} × {v.interior.widthCm} × {v.interior.heightCm}</td>
-                    <td className="px-4 py-2.5">{formatGel(v.baseFee)}</td>
-                    <td className="px-4 py-2.5">{formatGel(v.pricePerKm)}</td>
-                    <td className="px-4 py-2.5">{formatGel(v.spaceFee)}</td>
+                    <td className="px-4 py-2.5">{formatGel(v.baseFee, lang)}</td>
+                    <td className="px-4 py-2.5">{formatGel(v.pricePerKm, lang)}</td>
+                    <td className="px-4 py-2.5">{formatGel(v.spaceFee, lang)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="mt-2 text-xs text-muted">= {a.baseFee} + km × {a.perKm} + max(weight %, volume %) × {a.space100}</p>
+          <p className="mt-2 text-xs text-muted">{a.formula(a.baseFee, a.perKm, a.space100)}</p>
         </section>
     </div>
   );

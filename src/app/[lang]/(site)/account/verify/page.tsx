@@ -55,7 +55,7 @@ export default async function VerifyPage({ params, searchParams }: { params: Par
         {showLink && (
           <div className="mt-4 rounded-xl border-2 border-dashed border-[#d9a520] bg-[#fdf6e3] p-3 text-sm text-[#7a5300]" data-test-banner>
             <p className="flex items-start gap-2"><FlaskConical className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />{v.notSentTest}</p>
-            <a href={`${mail.link}${lang === "en" ? "&lang=en" : ""}`} className="btn btn-dark mt-2 px-3 py-1.5 text-sm" data-verify-link>{v.openLink}</a>
+            <a href={`${mail.link}&lang=${lang}`} className="btn btn-dark mt-2 px-3 py-1.5 text-sm" data-verify-link>{v.openLink}</a>
           </div>
         )}
         <form action={accountAction} className="mt-4">

@@ -6,6 +6,8 @@ import { getDict, isLang, href } from "@/i18n";
 import { isApproved } from "@/lib/market/catalog-store";
 import { sellerSession } from "@/lib/market/seller-page";
 import { sellerFiles } from "@/lib/market/sellers";
+import { userLang } from "@/lib/market/accounts";
+import { LanguagePreference } from "@/components/account/LanguagePreference";
 import { market } from "@/lib/market/server";
 import { pageLang } from "@/lib/page-lang";
 
@@ -64,6 +66,7 @@ export default async function StoreProfilePage({ params, searchParams }: { param
           </section>
         </>
       )}
+      <LanguagePreference lang={lang} current={userLang(market(), session.actor.id)} back={self} />
     </div>
   );
 }

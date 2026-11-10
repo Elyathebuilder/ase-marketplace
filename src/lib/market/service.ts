@@ -294,7 +294,7 @@ const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 function productSnapshot(p: Product, options: Record<string, string>) {
   return {
     name: p.name,
-    nameKa: p.ka?.name ?? null,
+    nameKa: p.translations?.ka?.name ?? null,
     category: p.category,
     specs: p.specs,
     materials: p.materials,

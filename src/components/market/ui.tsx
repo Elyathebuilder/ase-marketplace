@@ -54,7 +54,7 @@ export function Status({ value, labels }: { value: string; labels: Record<string
   return <StatusPill tone={TONE[value] ?? "grey"} label={labels[value] ?? value} />;
 }
 
-export const tetri = (t: number | null | undefined) => (t == null ? "—" : formatTetri(t));
+export const tetri = (t: number | null | undefined, lang?: Lang) => (t == null ? "—" : formatTetri(t, lang));
 
 export const when = (d: string | null | undefined, lang: Lang, withTime = true) =>
   d ? formatDate(d, lang, withTime ? { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" } : { day: "numeric", month: "short", year: "numeric" }) : "—";

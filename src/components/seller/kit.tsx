@@ -71,7 +71,7 @@ export function StepProgress({ lang, current, done, linkFrom = 2 }: { lang: Lang
                 {isDone && !isCurrent && <Check className="h-3 w-3" aria-hidden="true" />}
                 {label}
               </span>
-              <span className="sr-only">{`${label}${isCurrent ? " (current)" : isDone ? " (done)" : ""}`}</span>
+              <span className="sr-only">{`${label} ${isCurrent ? getDict(lang).common.stepCurrent : isDone ? getDict(lang).common.stepDone : ""}`}</span>
             </>
           );
           return (
@@ -142,7 +142,7 @@ export function MessageThread({ lang, messages, viewer }: { lang: Lang; messages
               {m.kind === "info_request" && <span className="font-semibold text-warn">{s.infoRequest}</span>}
               {m.kind === "decision" && <span className="font-semibold">{s.decision}</span>}
               {m.visibility === "internal" && (
-                <span className="inline-flex items-center gap-1 font-semibold text-warn"><Lock className="h-3 w-3" aria-hidden="true" />internal</span>
+                <span className="inline-flex items-center gap-1 font-semibold text-warn"><Lock className="h-3 w-3" aria-hidden="true" />{getDict(lang).adm.seller.internalTag}</span>
               )}
               <span className="ml-auto tabular-nums">{when(m.at, lang)}</span>
             </p>

@@ -4,8 +4,9 @@
  * Form actions for accounts: sign-in, registration, email verification, password reset, profile
  * and addresses. All checks happen in accounts.ts on the server.
  */
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { href, isLang, type Lang } from "@/i18n/config";
+import { LANG_COOKIE, href, langFrom, stripLang, type Lang } from "@/i18n/config";
 import { PLACES } from "../places";
 import * as acc from "./accounts";
 import { errorCode, isSafePath, run, safeBack, str, withParam } from "./action-kit";
@@ -14,7 +15,12 @@ import { deliverOutbox } from "./mailer";
 import { market } from "./server";
 import { MarketError } from "./types";
 
-const langOf = (f: FormData): Lang => (isLang(str(f, "lang")) ? (str(f, "lang") as Lang) : "ka");
+const langOf = (f: FormData): Lang => langFrom(str(f, "lang"));
+
+/** Remember the language in the browser too, so plain addresses open in it (see proxy.ts). */
+async function rememberLang(lang: Lang) {
+  (await cookies()).set(LANG_COOKIE, lang, { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 365 });
+}
 
 /** Where each kind of account goes after signing in. */
 function home(lang: Lang, role: string) {
@@ -28,8 +34,13 @@ export async function signInWithPassword(f: FormData) {
   try {
     const u = acc.authenticate(market(), str(f, "email"), str(f, "password"));
     await startSession(u.id);
+    // The site continues in the account's language; someone who never chose keeps the page's language.
+    const own = acc.userLang(market(), u.id);
+    if (!own) acc.setPreferredLang(market(), u.id, lang);
+    const shown = own ?? lang;
+    await rememberLang(shown);
     const next = str(f, "next");
-    target = isSafePath(next) ? next : home(lang, u.role);
+    target = isSafePath(next) ? href(shown, stripLang(next)) : home(shown, u.role);
   } catch (e) {
     target = withParam(back, "error", errorCode(e));
   }
@@ -52,6 +63,7 @@ export async function registerCustomerAction(f: FormData) {
       email: str(f, "email"),
       password: str(f, "password"),
       confirm: str(f, "confirm"),
+      lang,
     });
     await startSession(id);
     const next = str(f, "next");
@@ -77,6 +89,7 @@ export async function registerSellerAction(f: FormData) {
       confirm: str(f, "confirm"),
       sellerType: str(f, "sellerType"),
       storeName: str(f, "storeName"),
+      lang,
     });
     await startSession(userId);
     target = href(lang, "/seller/application?step=2");
@@ -117,6 +130,13 @@ export async function accountAction(f: FormData) {
     switch (op) {
       case "profile":
         return acc.updateProfile(ctx, actor, { firstName: str(f, "firstName"), lastName: str(f, "lastName"), phone: str(f, "phone") });
+      case "language": {
+        // Saved in the profile, then the same page opens in the new language.
+        const to = langFrom(str(f, "preferredLang"));
+        acc.setPreferredLang(ctx, actor.id, to);
+        await rememberLang(to);
+        return `${href(to, stripLang(safeBack(f).split("?")[0]))}?ok=1`;
+      }
       case "password": {
         acc.changePassword(ctx, actor, str(f, "current"), str(f, "password"), str(f, "confirm"));
         // The password change signed out every session; start a fresh one here.

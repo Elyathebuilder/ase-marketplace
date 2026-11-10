@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { headers } from "next/headers";
-import { getDict, href } from "@/i18n";
+import { getDict, href, langFrom } from "@/i18n";
 
 export default async function NotFound() {
-  const lang = (await headers()).get("x-ase-lang") === "en" ? "en" : "ka";
+  const lang = langFrom((await headers()).get("x-ase-lang"));
   const t = getDict(lang);
   return (
     <div className="container-page flex flex-col items-center py-24 text-center">

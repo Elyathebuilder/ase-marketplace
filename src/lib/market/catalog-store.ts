@@ -131,7 +131,7 @@ export function toManufacturer(r: MakerRow, photos: string[] = []): Manufacturer
     employees: r.employees,
     logoUrl: r.logo_file ? fileUrl(r.logo_file) : null,
     photos,
-    ka: { name: r.name_ka, tagline: r.tagline_ka, description: r.description_ka },
+    translations: { ka: { name: r.name_ka, tagline: r.tagline_ka, description: r.description_ka } },
   };
 }
 
@@ -186,7 +186,7 @@ export function toProduct(r: ProductRow, tiers: { min_qty: number; unit_price_te
     colors: json<string[]>(r.colors, []),
     variants: json<Product["variants"]>(r.variants, []),
     available: !!r.available,
-    ka: { name: r.name_ka, description: r.description_ka, highlights: r.highlights_ka ? json<string[]>(r.highlights_ka, []) : null },
+    translations: { ka: { name: r.name_ka, description: r.description_ka, highlights: r.highlights_ka ? json<string[]>(r.highlights_ka, []) : null } },
   };
 }
 

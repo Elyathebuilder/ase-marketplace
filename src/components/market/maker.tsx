@@ -61,7 +61,7 @@ export function MakerOrderCard({ o, lang }: { o: MakerOrder; lang: Lang }) {
         )}
         <span className="text-muted">{o.customer.name} · {place(o.customer.city, lang)}</span>
         <span className="ml-auto text-right">
-          <span className="block font-bold tabular-nums text-ink">{tetri(o.payable)}</span>
+          <span className="block font-bold tabular-nums text-ink">{tetri(o.payable, lang)}</span>
           <span className="block text-xs text-muted">{m.maker.payout}</span>
         </span>
       </div>
@@ -81,10 +81,10 @@ export function LiveFinance({ actor, lang }: { actor: Actor; lang: Lang }) {
         <p className="mt-1 max-w-3xl text-xs text-muted">{getDict(lang).sell.orders.paymentOnlyAdmin}</p>
       </div>
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <Kpi label={m.sales} value={tetri(f.sales)} />
-        <Kpi label={m.commissionTotal} value={tetri(f.commission)} />
-        <Kpi label={m.awaiting} value={tetri(f.awaiting)} hint={`${m.notYet}: ${tetri(f.notYetEligible)}${f.onHold ? ` · ${m.onHold}: ${tetri(f.onHold)}` : ""}`} />
-        <Kpi label={m.transferred} value={tetri(f.transferred)} />
+        <Kpi label={m.sales} value={tetri(f.sales, lang)} />
+        <Kpi label={m.commissionTotal} value={tetri(f.commission, lang)} />
+        <Kpi label={m.awaiting} value={tetri(f.awaiting, lang)} hint={`${m.notYet}: ${tetri(f.notYetEligible, lang)}${f.onHold ? ` · ${m.onHold}: ${tetri(f.onHold, lang)}` : ""}`} />
+        <Kpi label={m.transferred} value={tetri(f.transferred, lang)} />
       </div>
       {f.bank && (
         <p className="text-sm text-ink-2">{m.bankAccount}: <strong>{f.bank.account_holder}</strong>, {f.bank.bank_name}, <span className="font-mono">{f.bank.iban}</span></p>
@@ -99,9 +99,9 @@ export function LiveFinance({ actor, lang }: { actor: Actor; lang: Lang }) {
               {f.orders.map((o) => (
                 <tr key={o.id}>
                   <td className="px-3 py-2"><Link href={href(lang, `/seller/orders/${o.id}`)} className="font-semibold text-red-600 hover:underline">{o.orderNumber}</Link></td>
-                  <td className="px-3 py-2 tabular-nums">{tetri(o.goods)}</td>
-                  <td className="px-3 py-2 tabular-nums">−{tetri(o.commission)} <span className="text-xs text-muted">({formatBps(o.commissionBps)})</span></td>
-                  <td className="px-3 py-2 font-semibold tabular-nums">{o.status === "rejected" || o.status === "cancelled" ? "—" : tetri(o.payable)}</td>
+                  <td className="px-3 py-2 tabular-nums">{tetri(o.goods, lang)}</td>
+                  <td className="px-3 py-2 tabular-nums">−{tetri(o.commission, lang)} <span className="text-xs text-muted">({formatBps(o.commissionBps, lang)})</span></td>
+                  <td className="px-3 py-2 font-semibold tabular-nums">{o.status === "rejected" || o.status === "cancelled" ? "—" : tetri(o.payable, lang)}</td>
                   <td className="px-3 py-2">{o.status === "rejected" || o.status === "cancelled" ? <Status value={o.status} labels={mk.shipmentStatus} /> : <Status value={o.payout!.status} labels={mk.payoutStatus} />}</td>
                   <td className="px-3 py-2 font-mono text-xs">{o.payout?.reference ?? "—"}</td>
                   <td className="px-3 py-2">{o.payout?.status === "transfer_completed" ? o.payout.date : "—"}</td>

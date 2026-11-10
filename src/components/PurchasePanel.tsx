@@ -68,7 +68,7 @@ export function PurchasePanel({ slug, unit, retailPrice, buyNow, requestQuote, m
               <Plus className="h-4 w-4" />
             </button>
           </div>
-          {unitPrice != null && <span className="ml-auto text-sm font-bold text-ink">{formatGel(unitPrice * qty)}</span>}
+          {unitPrice != null && <span className="ml-auto text-sm font-bold text-ink">{formatGel(unitPrice * qty, lang)}</span>}
         </div>
       )}
       {canBuy && choices.map((c) => (
@@ -80,16 +80,16 @@ export function PurchasePanel({ slug, unit, retailPrice, buyNow, requestQuote, m
           </select>
         </div>
       ))}
-      {canBuy && applied != null && <p className="rounded-lg bg-ok-50 px-3 py-2 text-xs text-ok">{p.tierApplied(unit, formatGel(applied))}</p>}
+      {canBuy && applied != null && <p className="rounded-lg bg-ok-50 px-3 py-2 text-xs text-ok">{p.tierApplied(unit, formatGel(applied, lang))}</p>}
       {canBuy && quoteOnly && tier && requestQuote && (
-        <p className="rounded-lg bg-ok-50 px-3 py-2 text-xs text-ok">{p.tierHint(qty, units(unit, lang, qty), formatGel(tier.unitPrice))}</p>
+        <p className="rounded-lg bg-ok-50 px-3 py-2 text-xs text-ok">{p.tierHint(qty, units(unit, lang, qty), formatGel(tier.unitPrice, lang))}</p>
       )}
       {!quoteOnly && tiers.length > 0 && retailPrice != null && (
         <div className="rounded-lg border border-line px-3 py-2 text-xs">
           <p className="font-semibold text-ink">{p.tiersTitle}</p>
           <ul className="mt-1 space-y-0.5 text-ink-2">
             {[...tiers].sort((a, b) => a.minQty - b.minQty).map((x) => (
-              <li key={x.minQty} className="flex justify-between gap-3"><span>{p.tierRow(x.minQty, units(unit, lang, x.minQty))}</span><span className="tabular-nums">{formatGel(x.unitPrice)}</span></li>
+              <li key={x.minQty} className="flex justify-between gap-3"><span>{p.tierRow(x.minQty, units(unit, lang, x.minQty))}</span><span className="tabular-nums">{formatGel(x.unitPrice, lang)}</span></li>
             ))}
           </ul>
         </div>

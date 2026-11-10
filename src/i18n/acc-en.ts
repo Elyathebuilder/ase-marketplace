@@ -107,6 +107,8 @@ export const accEn = {
     memberSince: (d: string) => `Customer since ${d}`,
     unread: (n: number) => `${n} unread`,
     seeAll: "See all",
+    language: "Language",
+    languageHint: "The site opens in this language when you sign in, and your notifications and emails are written in it.",
   },
   addresses: {
     title: "Delivery addresses",

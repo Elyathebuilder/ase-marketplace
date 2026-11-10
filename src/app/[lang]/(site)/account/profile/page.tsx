@@ -5,7 +5,8 @@ import { Submit } from "@/components/forms/Submit";
 import { FormNotice, SignInRequired } from "@/components/market/ui";
 import { getDict, href, isLang } from "@/i18n";
 import { accountAction } from "@/lib/market/account-actions";
-import { getUser } from "@/lib/market/accounts";
+import { getUser, userLang } from "@/lib/market/accounts";
+import { LanguagePreference } from "@/components/account/LanguagePreference";
 import { currentAccount } from "@/lib/market/auth";
 import { market } from "@/lib/market/server";
 import { pageLang } from "@/lib/page-lang";
@@ -43,6 +44,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
         <Field id="pf-email" label={r.email} value={u.email} readOnly disabled hint={a.emailFixed} className="sm:col-span-2" />
         <Submit className="btn btn-primary w-fit">{a.save}</Submit>
       </form>
+      <div className="mt-4"><LanguagePreference lang={lang} current={userLang(market(), u.id)} back={self} /></div>
     </AccountShell>
   );
 }

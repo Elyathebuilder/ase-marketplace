@@ -27,6 +27,10 @@ export const en = {
     makersCount: (n: number) => `${n} manufacturer${n === 1 ? "" : "s"}`,
     language: "Language",
     breadcrumb: "Breadcrumb",
+    /** Measurement units after numbers. */
+    measure: { cm: "cm", kg: "kg", km: "km", m3: "m³" },
+    stepCurrent: "(current step)",
+    stepDone: "(done)",
   },
   demo: {
     banner: "Preview",
@@ -423,6 +427,8 @@ export const en = {
     browse: "Browse products",
   },
   units: {} as Record<string, string>,
+  /** Unit after a count, by plural form (see plural.ts). English adds "s" in i18n/index.ts instead. */
+  unitForms: {} as Record<string, { one?: string; few?: string; many?: string; other: string }>,
   seller: {
     banner: "Seller portal preview.",
     bannerText: "This shows the design with demo data. Buttons don't save anything yet.",
@@ -707,6 +713,7 @@ export const en = {
     lines: "Shipment contents",
     add: "Add line",
     customerSees: "The customer sees only",
+    formula: (base: string, perKm: string, space: string) => `= ${base} + km × ${perKm} + max(weight %, volume %) × ${space}`,
     vehicleNames: {} as Record<string, string>,
   },
   market: marketEn,

@@ -7,7 +7,7 @@ Latest work: registration and accounts for customers and sellers (email confirma
 **Next session, in this order:**
 1. Owner creates a Resend account, verifies the sending domain and gives `RESEND_API_KEY` and `MAIL_FROM`.
 2. Owner chooses hosting (a small server with a disk for the database and uploads) and sets the server settings listed in the README.
-3. Native Georgian speaker reviews `src/i18n/*-ka.ts`.
+3. Native speakers review the Georgian, Russian, Turkish and Armenian text in `src/i18n/` (see `docs/GLOSSARY.md`).
 4. Move to Supabase when the owner wants it (`supabase/migrations/0001` and `0002`, checked locally with `supabase/tests/rls_check.sql`).
 5. Answer the open decisions below.
 
@@ -29,7 +29,7 @@ Latest work: registration and accounts for customers and sellers (email confirma
 | Purchase journey: checkout (name, phone, email, city, address, note) → payment page with bank-transfer instructions → payment notification → confirmation → tracking timeline; one-click demo sign-in from checkout | Done (demo database) |
 | TEST mode (`ASE_TEST_MODE`, on unless set to `0`): orders flagged TEST everywhere, placeholder bank details instead of real ones, admin overview keeps real and TEST money apart; never changeable from the admin pages | Done |
 | Static preview: the same journey runs in the browser only, with TEST orders kept in localStorage (`tools/preview`) | Done |
-| Languages: Georgian default at plain URLs, English under `/en`, "ქართული \| English" switcher; all UI and demo catalog translated | Done (needs native review) |
+| Languages: Georgian default at plain URLs; English, Russian, Turkish, Armenian under `/en`, `/ru`, `/tr`, `/hy`; choice saved on the profile and used for emails; all UI and demo catalog names translated | Done (needs native review) |
 | Seller quotations | Preview only (B2B RFQ phase) |
 | Orders and bank-transfer payments: checkout, bank details, "I have made the payment" with receipt, admin verification (confirm, partial, incorrect amount, reject, ask for the rest) | Done (demo database) |
 | Order timeline for customers, one shipment per manufacturer, full status history (who, when, why) | Done (demo database) |
@@ -78,7 +78,7 @@ Rental features: none exist in ASE (they belong to the separate amartani-propert
 | 4b | Delivery rates: confirm Scooter 0/0.60/5, Car 0/0.60/10, Van 20/1.50/20, Truck 50/2.50/40 (base / per km / space fee) and vehicle sizes; minimum charge? | Phase 6 | Long trips are expensive for small items (one paint bucket Tbilisi → Batumi ≈ 212 ₾) |
 | 5 | Delivery time options: "as soon as possible" vs set day and time window. Does a set time cost extra? | Phase 5 | From the interaction-logic document |
 | 6 | Who delivers: ASE's own couriers or partner transport companies | Phase 5 | Affects vehicle capacities and rates |
-| 7 | Georgian text review by a native speaker; add Russian later? | Before launch | Georgian is the default; English is second |
+| 7 | Native review of the Georgian, Russian, Turkish and Armenian text | Before launch | Georgian is the default; English is second |
 | 8 | Brand name and logo | Before launch | "ASE" with a red cross mark is a placeholder; payment pages say "Amartani" |
 | 9 | Amartani's real bank account, payment deadline, and legal review of holding customer money before paying manufacturers | Before launch | The demo IBAN is fake. The ledger is internal bookkeeping, not escrow |
 | 10 | Email provider account (Resend recommended: free up to 3,000 emails a month) | Before launch | Emails wait in the outbox until the key is set; no paid SMS/WhatsApp without your approval |

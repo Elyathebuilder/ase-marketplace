@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_LANG, href, stripLang } from "./config";
+import { DEFAULT_LANG, LANGS, href, langOfPath, stripLang } from "./config";
+import { DICTS } from "./dictionaries";
+import { CATALOG_TEXT } from "./catalog-text";
+import { plural } from "./plural";
+import { formatTetri, formatBps } from "@/lib/money";
 import { en } from "./en";
 import { ka } from "./ka";
 import { CATEGORIES_KA, MANUFACTURERS_KA, PLACES_KA, PRODUCTS_KA } from "./data-ka";
@@ -20,6 +24,44 @@ describe("languages", () => {
     expect(href("en", "/products")).toBe("/en/products");
     expect(href("en", "/")).toBe("/en");
     expect(stripLang("/en/cart")).toBe("/cart");
+  });
+
+  it("every language gets a clean prefixed URL", () => {
+    for (const l of ["en", "ru", "tr", "hy"] as const) {
+      expect(href(l, "/cart")).toBe(`/${l}/cart`);
+      expect(langOfPath(`/${l}/cart`)).toBe(l);
+      expect(stripLang(`/${l}/cart`)).toBe("/cart");
+      expect(stripLang(`/${l}`)).toBe("/");
+    }
+    expect(langOfPath("/cart")).toBe("ka");
+    expect(langOfPath("/hyacinth")).toBe("ka");
+  });
+
+  it("every language has every English text (except open-ended lookup tables)", () => {
+    const lookup = (k: string) => /^(delivery\.cities|units|unitForms|admin\.vehicleNames)\./.test(k);
+    const want = keys(en).filter((k) => !lookup(k));
+    for (const l of LANGS) {
+      const have = new Set(keys(DICTS[l]));
+      expect({ l, missing: want.filter((k) => !have.has(k)) }).toEqual({ l, missing: [] });
+    }
+  });
+
+  it("catalog names exist in every new language", () => {
+    for (const l of ["ru", "tr", "hy"] as const) {
+      const t = CATALOG_TEXT[l]!;
+      expect({ l, c: getCategories().filter((c) => !t.categories[c.slug]).map((c) => c.slug) }).toEqual({ l, c: [] });
+      expect({ l, p: Object.keys(PLACES).filter((p) => !t.places[p]) }).toEqual({ l, p: [] });
+    }
+  });
+
+  it("plurals and numbers follow each language", () => {
+    const f = { one: "товар", few: "товара", many: "товаров", other: "товара" };
+    expect([1, 3, 5, 21, 11].map((n) => plural("ru", n, f))).toEqual(["товар", "товара", "товаров", "товар", "товаров"]);
+    expect(formatTetri(123456, "en")).toBe("1,234.56 ₾");
+    expect(formatTetri(123456, "ru").replace(/\s/g, " ")).toBe("1 234,56 ₾");
+    expect(formatTetri(123456, "tr")).toBe("1.234,56 ₾");
+    expect(formatBps(1250, "tr")).toMatch(/^%12,5/);
+    expect(formatBps(1250, "en")).toMatch(/^12\.5%/);
   });
 
   it("Georgian has every English text (except open-ended lookup tables)", () => {

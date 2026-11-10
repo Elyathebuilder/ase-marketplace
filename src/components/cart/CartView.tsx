@@ -68,7 +68,7 @@ export function CartView() {
                         <Link href={href(lang, `/products/${p.slug}`)} className="font-semibold text-ink hover:text-red-600 hover:underline">{p.name}</Link>
                         {chosen.length > 0 && <p className="text-xs text-ink-2">{chosen.map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>}
                         <p className="text-xs text-muted">
-                          {formatGel(unitPrice)} {t.common.perUnit(p.unit)}
+                          {formatGel(unitPrice, lang)} {t.common.perUnit(p.unit)}
                           {pricing === "wholesale" && <span className="ml-1 font-semibold text-ok">{t.cart.quantityPrice}</span>}
                         </p>
                       </div>
@@ -81,7 +81,7 @@ export function CartView() {
                           <Plus className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                      <span className="w-24 text-right font-semibold tabular-nums text-ink">{formatGel(lineTotal)}</span>
+                      <span className="w-24 text-right font-semibold tabular-nums text-ink">{formatGel(lineTotal, lang)}</span>
                       <button type="button" className="btn btn-ghost p-2 text-muted hover:text-red-700" aria-label={`${c.remove}: ${p.name}`} onClick={() => removeFromCart(key)}>
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -94,7 +94,7 @@ export function CartView() {
                   <Truck className="h-4 w-4 text-muted" aria-hidden="true" /> {c.shipmentDelivery}
                 </span>
                 {s?.status === "quoted" ? (
-                  <span className="font-semibold tabular-nums text-ink" data-shipment-price>{formatGel(s.price.total)}</span>
+                  <span className="font-semibold tabular-nums text-ink" data-shipment-price>{formatGel(s.price.total, lang)}</span>
                 ) : (
                   <span className="text-right text-warn">{s ? t.manual[s.reason] : c.toConfirm}</span>
                 )}
@@ -119,7 +119,7 @@ export function CartView() {
         <dl className="mt-4 space-y-2 text-sm">
           <div className="flex justify-between gap-3 text-ink-2">
             <dt>{c.goods}</dt>
-            <dd className="tabular-nums">{formatGel(quote.goods)}</dd>
+            <dd className="tabular-nums">{formatGel(quote.goods, lang)}</dd>
           </div>
           <div className="flex justify-between gap-3 text-ink-2">
             <dt>
@@ -127,13 +127,13 @@ export function CartView() {
               <span className="block text-xs text-muted">{c.deliveryPerShipment(quote.groups.length)}</span>
             </dt>
             <dd className="tabular-nums" data-delivery-total>
-              {formatGel(quote.delivery.quotedTotal)}
+              {formatGel(quote.delivery.quotedTotal, lang)}
               {quote.delivery.requiresManualQuote && <span className="block text-xs text-warn">+ {c.toConfirm}</span>}
             </dd>
           </div>
           <div className="flex justify-between gap-3 border-t border-line pt-2 text-base font-bold text-ink">
             <dt>{c.total}</dt>
-            <dd className="tabular-nums" data-cart-total>{formatGel(quote.total)}</dd>
+            <dd className="tabular-nums" data-cart-total>{formatGel(quote.total, lang)}</dd>
           </div>
         </dl>
         {quote.delivery.requiresManualQuote ? (

@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { DemoNotice } from "@/components/DemoNotice";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getDict, href } from "@/i18n";
+import { getDict, href, langFrom } from "@/i18n";
 import { I18nProvider } from "@/i18n/client";
 import { fontVariables } from "./fonts";
 import "./globals.css";
@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "404 · ASE", robots: { index: false 
 
 /** The site's own "page not found", in the visitor's language, with the normal header and footer. */
 export default async function GlobalNotFound() {
-  const lang = (await headers()).get("x-ase-lang") === "en" ? "en" : "ka";
+  const lang = langFrom((await headers()).get("x-ase-lang"));
   const t = getDict(lang);
   return (
     <html lang={lang} className={fontVariables}>

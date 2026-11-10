@@ -5,6 +5,7 @@
  * their own orders) and for the administrators who review them. These only read the form and call
  * the services; every permission check happens in the services on the server, never in the page.
  */
+import { href, langFrom } from "@/i18n/config";
 import { run, str } from "./action-kit";
 import * as badge from "./badge";
 import * as products from "./products";
@@ -87,7 +88,7 @@ const SELLER_FILE_KINDS = ["registration_document", "logo", "workshop_photo", "p
 /** Everything a signed-in seller does. The op names the step; the services decide whether it is allowed. */
 export async function sellerAction(f: FormData) {
   const op = str(f, "op");
-  const lang = str(f, "lang") === "en" ? "/en" : "";
+  const lang = langFrom(str(f, "lang"));
   await run(f, async (actor) => {
     const ctx = market();
     switch (op) {
@@ -95,7 +96,7 @@ export async function sellerAction(f: FormData) {
         const step = str(f, "step") === "contact" ? "contact" : "business";
         sellers.saveApplication(ctx, actor, step, application(f));
         const next = str(f, "goto");
-        return next && /^[0-9]$/.test(next) ? `${lang}/seller/application?step=${next}` : undefined;
+        return next && /^[0-9]$/.test(next) ? href(lang, `/seller/application?step=${next}`) : undefined;
       }
       case "upload": {
         const kind = str(f, "kind") as (typeof SELLER_FILE_KINDS)[number];
@@ -141,7 +142,7 @@ export async function sellerAction(f: FormData) {
         // New photos chosen in the same form are added straight away.
         for (const s of await saveAll(f, "images", IMAGES, products.MAX_IMAGES)) products.addProductImage(ctx, actor, slug, s);
         if (str(f, "publish") === "1") products.publishProduct(ctx, actor, slug);
-        return existing ? undefined : `${lang}/seller/products/${slug}?ok=1`;
+        return existing ? undefined : href(lang, `/seller/products/${slug}?ok=1`);
       }
       case "productImage": {
         const slug = str(f, "slug");
@@ -160,7 +161,7 @@ export async function sellerAction(f: FormData) {
         const a = str(f, "action");
         if (a !== "unpublish" && a !== "archive" && a !== "restore" && a !== "delete") throw new MarketError("invalid_input");
         products.productStatusAction(ctx, actor, str(f, "slug"), a);
-        return a === "delete" ? `${lang}/seller/products?ok=1` : undefined;
+        return a === "delete" ? href(lang, `/seller/products?ok=1`) : undefined;
       }
 
       case "orderStep":

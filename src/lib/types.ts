@@ -1,4 +1,5 @@
 /** Public marketplace data model, read from the database (see lib/market/catalog-store.ts). */
+import type { Lang } from "@/i18n/config";
 
 /**
  * What customers see about a seller.
@@ -40,8 +41,11 @@ export interface Manufacturer {
   logoUrl?: string | null;
   /** Workshop / production photos. */
   photos?: string[];
-  /** Georgian text entered by the seller. */
-  ka?: { name?: string | null; tagline?: string | null; description?: string | null };
+  /**
+   * The seller's own text in other languages (today: Georgian). The base fields above are the main text.
+   * Pages pick the visitor's language and fall back to the base text; nothing is machine-translated.
+   */
+  translations?: Partial<Record<Lang, { name?: string | null; tagline?: string | null; description?: string | null }>>;
 }
 
 export interface ProductVariant {
@@ -90,8 +94,8 @@ export interface Product {
   variants?: ProductVariant[];
   /** False when the seller has paused sales. */
   available?: boolean;
-  /** Georgian text entered by the seller. */
-  ka?: { name?: string | null; description?: string | null; highlights?: string[] | null };
+  /** The seller's own text in other languages (today: Georgian), as for Manufacturer.translations. */
+  translations?: Partial<Record<Lang, { name?: string | null; description?: string | null; highlights?: string[] | null }>>;
   tags: string[];
   featured?: boolean;
   popularity: number;

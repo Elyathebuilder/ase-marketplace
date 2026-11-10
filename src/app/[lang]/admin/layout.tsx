@@ -22,7 +22,7 @@ export default async function AdminLayout({ children, params }: { children: Reac
       <header className="border-b border-line bg-surface">
         <div className="container-page flex items-center gap-3 py-3">
           <Logo lang={lang} />
-          <span className="rounded-md bg-ink px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-white">Admin</span>
+          <span className="rounded-md bg-ink px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-white">{t.acc.nav.admin}</span>
           <div className="ml-auto flex items-center gap-3">
             {isAdmin && (
               <form action={signOut} className="hidden items-center gap-2 text-sm text-ink-2 sm:flex">

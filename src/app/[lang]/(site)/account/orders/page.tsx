@@ -51,7 +51,7 @@ export default async function MyOrdersPage({ params }: { params: Params }) {
                     <Status value={o.status} labels={m.orderStatus} />
                     {o.is_test === 1 && <TestTag lang={lang} />}
                     <span className="text-xs text-muted">{m.orders.placedOn(when(o.created_at, lang, false))}</span>
-                    <span className="ml-auto font-bold tabular-nums">{tetri(o.total_tetri)}</span>
+                    <span className="ml-auto font-bold tabular-nums">{tetri(o.total_tetri, lang)}</span>
                   </Link>
                 </li>
               ))}

@@ -1,19 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { locMaker, locProduct, place } from "@/i18n";
+import { locMaker, locProduct, place, type Lang } from "@/i18n";
 import { useI18n } from "@/i18n/client";
 import type { Manufacturer, Product } from "@/lib/types";
 import { DEFAULT_DELIVERY_SETTINGS, quoteShipment } from "@/lib/delivery";
-import { formatGel } from "@/lib/format";
+import { formatGel, formatNumber, numberFormat } from "@/lib/format";
 import { PLACES, approxRoadKm } from "@/lib/places";
 
-const pct = (n: number) => `${Math.round(n * 1000) / 10}%`;
+const pct = (n: number, lang: Lang) => `${numberFormat(lang, 0, 1).format(Math.round(n * 1000) / 10)}%`;
 
 /** Internal delivery calculator: shows every step the engine takes. Never shown to customers. */
 export function DeliveryCalculator({ products, makers }: { products: Product[]; makers: Record<string, Manufacturer> }) {
   const { lang, t } = useI18n();
   const a = t.admin;
+  const u = t.common.measure;
   const [slug, setSlug] = useState(products.some((p) => p.slug === "oak-dining-table-180") ? "oak-dining-table-180" : (products[0]?.slug ?? ""));
   const [qty, setQty] = useState(1);
   const [to, setTo] = useState("Batumi");
@@ -40,9 +41,9 @@ export function DeliveryCalculator({ products, makers }: { products: Product[]; 
             ))}
           </select>
           <p className="mt-1 text-xs text-muted">
-            {product.lengthCm} × {product.widthCm} × {product.heightCm} cm · {product.weightKg} kg
-            {product.fragile ? " · fragile" : ""}
-            {product.specialHandling ? " · special" : ""}
+            {product.lengthCm} × {product.widthCm} × {product.heightCm} {u.cm} · {formatNumber(product.weightKg, lang)} {u.kg}
+            {product.fragile ? ` · ${t.product.fragile}` : ""}
+            {product.specialHandling ? ` · ${t.product.special}` : ""}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -68,19 +69,19 @@ export function DeliveryCalculator({ products, makers }: { products: Product[]; 
         {q.status === "quoted" ? (
           <dl className="space-y-1.5 text-sm">
             <Row k={a.vehicle} v={vName(q.vehicle.id, q.vehicle.name)} strong />
-            <Row k={a.distance} v={`${q.distanceKm} km`} />
-            <Row k={a.totals} v={`${q.totals.totalWeightKg.toFixed(1)} kg / ${q.totals.totalVolumeM3.toFixed(3)} m³`} />
-            <Row k={a.weightUtil} v={pct(q.weightUtilization)} />
-            <Row k={a.volumeUtil} v={pct(q.volumeUtilization)} />
-            <Row k={a.overallUtil} v={pct(q.overallUtilization)} />
+            <Row k={a.distance} v={`${formatNumber(q.distanceKm, lang)} ${u.km}`} />
+            <Row k={a.totals} v={`${numberFormat(lang, 1, 1).format(q.totals.totalWeightKg)} ${u.kg} / ${numberFormat(lang, 3, 3).format(q.totals.totalVolumeM3)} ${u.m3}`} />
+            <Row k={a.weightUtil} v={pct(q.weightUtilization, lang)} />
+            <Row k={a.volumeUtil} v={pct(q.volumeUtilization, lang)} />
+            <Row k={a.overallUtil} v={pct(q.overallUtilization, lang)} />
             <div className="my-2 border-t border-line" />
-            <Row k={a.baseFee} v={formatGel(q.price.baseFee)} />
-            <Row k={`${a.distanceFee} (${q.distanceKm} km)`} v={formatGel(q.price.distanceFee)} />
-            <Row k={`${a.spaceFee} (${pct(q.overallUtilization)})`} v={formatGel(q.price.spaceFee)} />
-            {q.price.minimumTopUp > 0 && <Row k={a.minTopUp} v={formatGel(q.price.minimumTopUp)} />}
-            <Row k={a.total} v={formatGel(q.price.total)} strong />
+            <Row k={a.baseFee} v={formatGel(q.price.baseFee, lang)} />
+            <Row k={`${a.distanceFee} (${formatNumber(q.distanceKm, lang)} ${u.km})`} v={formatGel(q.price.distanceFee, lang)} />
+            <Row k={`${a.spaceFee} (${pct(q.overallUtilization, lang)})`} v={formatGel(q.price.spaceFee, lang)} />
+            {q.price.minimumTopUp > 0 && <Row k={a.minTopUp} v={formatGel(q.price.minimumTopUp, lang)} />}
+            <Row k={a.total} v={formatGel(q.price.total, lang)} strong />
             <p className="pt-2 text-xs text-muted">
-              {a.customerSees}: “{t.delivery.estimated}: {formatGel(q.price.total)}”
+              {a.customerSees}: “{t.delivery.estimated}: {formatGel(q.price.total, lang)}”
             </p>
           </dl>
         ) : (

@@ -77,7 +77,7 @@ export default async function SellerProductsPage({ params, searchParams }: { par
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-ink">{(lang === "ka" && row.name_ka) || row.name}</p>
                   <p className="mt-0.5 text-sm text-ink-2">
-                    {row.retail_price_tetri ? `${tetri(row.retail_price_tetri)} / ${unit(row.unit, lang)}` : s.noPrice}
+                    {row.retail_price_tetri ? `${tetri(row.retail_price_tetri, lang)} / ${unit(row.unit, lang)}` : s.noPrice}
                     <span className="text-muted"> · {s.colStock}: {row.stock}</span>
                   </p>
                   <div className="mt-1.5"><StatusChip status={TONE[row.status]} label={s.status[row.status]} /></div>

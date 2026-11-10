@@ -95,8 +95,21 @@ browser-only parts. On the preview, checkout creates TEST orders kept only in th
 
 ## Languages
 
-Georgian (ქართული) is the default: every plain address is Georgian. English is the same page under `/en`.
-The switcher in the header reads "ქართული | English". The Georgian text should be reviewed by a native speaker before launch.
+Five languages: Georgian (ქართული, the default), English, Russian, Turkish and Armenian. Every plain address is
+Georgian; the others are the same page under `/en`, `/ru`, `/tr` and `/hy`. The switcher in the header lists all five.
+
+- The choice is kept in the `ase_lang` cookie, so the site reopens in that language. A signed-in user's choice is
+  also saved on their profile (`preferred_lang`) and applied at sign-in; notifications and emails use it too.
+  Users can change it on their profile page or in the seller company page.
+- Interface text lives in `src/i18n/` as one typed dictionary per language and area (`ka.ts`, `market-ru.ts`,
+  `acc-tr.ts`, `sell-hy.ts`, `adm-ru.ts`, …). A missing key is a type error, and a test checks every language
+  has every English key. Agreed terms are in `docs/GLOSSARY.md`.
+- Seller content (product and manufacturer names, descriptions) is not translated. `Product.translations` and
+  `Manufacturer.translations` hold optional per-language text and fall back to the original.
+- Numbers, prices and dates use each language's locale format; amounts are always GEL (₾).
+- To add a language: add its code to `LANGS` in `src/i18n/config.ts`, write its dictionary files, register them in
+  `src/i18n/dictionaries.ts`, add catalog names in `catalog-text.ts`, and check the font covers its script.
+- All translations should be reviewed by native speakers before launch.
 
 ## Delivery
 

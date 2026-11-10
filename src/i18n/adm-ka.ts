@@ -45,6 +45,7 @@ export const admKa: Dict["adm"] = {
     messages: "შეტყობინებები და შიდა შენიშვნები",
     messageLabel: "შეტყობინება",
     internal: "შიდა შენიშვნა (გამყიდველი ვერასოდეს დაინახავს)",
+    internalTag: "შიდა",
     send: "შენახვა",
     history: "სტატუსების ისტორია",
     actions: "ადმინისტრატორის ქმედებები",

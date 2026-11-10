@@ -64,7 +64,7 @@ export default async function AdminProducts({ params, searchParams }: { params: 
                   <Link href={href(lang, `/admin/sellers/${row.manufacturer_slug}`)} className="hover:underline">{row.maker_name}</Link>
                   {!isApproved(row.account_status) && <span className="ml-2 text-xs font-semibold text-warn">{a.sellerNotApproved}</span>}
                 </p>
-                <p className="text-sm text-ink-2">{row.retail_price_tetri ? tetri(row.retail_price_tetri) : ps.noPrice}</p>
+                <p className="text-sm text-ink-2">{row.retail_price_tetri ? tetri(row.retail_price_tetri, lang) : ps.noPrice}</p>
                 <div className="mt-1"><StatusChip status={TONE[row.status]} label={ps.status[row.status]} /></div>
                 {row.moderation_note && <p className="mt-1 text-xs text-red-700">{row.moderation_note}</p>}
                 <p className="mt-1 line-clamp-2 text-xs text-muted">{row.description}</p>

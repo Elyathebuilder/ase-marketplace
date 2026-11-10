@@ -68,7 +68,7 @@ export default async function SellerDashboard({ params }: { params: Promise<{ la
           <Kpi label={d.newOrders} value={String(count("new"))} href={to("/seller/orders?status=new")} alert={count("new") > 0} />
           <Kpi label={d.inPreparation} value={String(count("paid") + count("preparing"))} href={to("/seller/orders?status=preparing")} />
           <Kpi label={d.totalOrders} value={String(orders.length)} hint={`${d.completed}: ${count("completed")}`} href={to("/seller/orders")} />
-          <Kpi label={d.sales30} value={tetri(sales30)} href={to("/seller/finances")} />
+          <Kpi label={d.sales30} value={tetri(sales30, lang)} href={to("/seller/finances")} />
         </div>
         {orders.length > 0 && <ul className="space-y-3">{orders.slice(0, 3).map((o) => <li key={o.id}><MakerOrderCard o={o} lang={lang} /></li>)}</ul>}
       </section>

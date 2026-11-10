@@ -31,8 +31,8 @@ export default async function AdminOrders({ params }: { params: Params }) {
             <td className="px-3 py-2"><Link href={href(lang, `/admin/orders/${o.id}`)} className="font-semibold text-red-600 hover:underline">{o.id}</Link> {o.is_test === 1 && <TestTag lang={lang} />}</td>
             <td className="px-3 py-2">{o.customer_name}</td>
             <td className="px-3 py-2 text-ink-2">{when(o.created_at, lang)}</td>
-            <td className="px-3 py-2 tabular-nums">{tetri(o.total_tetri)}</td>
-            <td className="px-3 py-2 tabular-nums">{tetri(o.received_tetri)}</td>
+            <td className="px-3 py-2 tabular-nums">{tetri(o.total_tetri, lang)}</td>
+            <td className="px-3 py-2 tabular-nums">{tetri(o.received_tetri, lang)}</td>
             <td className="px-3 py-2 tabular-nums">{o.shipments}</td>
             <td className="space-x-1 px-3 py-2">
               <Status value={o.status} labels={m.orderStatus} />

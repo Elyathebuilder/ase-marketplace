@@ -42,8 +42,8 @@ export default async function QuotesPage({ params }: { params: Params }) {
                   <div className="text-xs text-muted">{q.id} · {formatDate(q.receivedAt, lang, { day: "numeric", month: "short" })}</div>
                 </td>
                 <td className="px-4 py-3 text-ink-2">{q.company}<div className="text-xs text-muted">{place(q.city, lang)}</div></td>
-                <td className="px-4 py-3 tabular-nums text-ink-2">{formatNumber(q.qty)} {units(q.unit, lang, q.qty)}</td>
-                <td className="px-4 py-3 tabular-nums text-ink-2">{q.offer ? `${formatGel(q.offer.unitPrice)} / ${units(q.unit, lang, 1)}` : "—"}</td>
+                <td className="px-4 py-3 tabular-nums text-ink-2">{formatNumber(q.qty, lang)} {units(q.unit, lang, q.qty)}</td>
+                <td className="px-4 py-3 tabular-nums text-ink-2">{q.offer ? `${formatGel(q.offer.unitPrice, lang)} / ${units(q.unit, lang, 1)}` : "—"}</td>
                 <td className="px-4 py-3"><StatusPill tone={QUOTE_STATUS[q.status].tone} label={t.seller.quoteStatus[q.status]} /></td>
               </tr>
             ))}

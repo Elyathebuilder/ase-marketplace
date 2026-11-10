@@ -229,6 +229,15 @@ export const MIGRATIONS: { version: number; name: string; up: (db: DatabaseSync)
   },
   { version: 2, name: "accounts, sign-in tokens, addresses, email outbox, admin actions", up: (db) => db.exec(ACCOUNTS_SQL) },
   { version: 3, name: "sellers, verification, Verified badge, products, order messages", up: (db) => db.exec(SELLERS_SQL) },
+  {
+    version: 4,
+    name: "users: preferred language for the site, notifications and emails",
+    up(db) {
+      // NULL means "not chosen yet": Georgian, the site's default language.
+      if (!columns(db, "users").has("preferred_lang"))
+        db.exec("ALTER TABLE users ADD COLUMN preferred_lang TEXT CHECK (preferred_lang IS NULL OR preferred_lang IN ('ka','en','ru','tr','hy'))");
+    },
+  },
 ];
 
 const columns = (db: DatabaseSync, table: string) => new Set((db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name));

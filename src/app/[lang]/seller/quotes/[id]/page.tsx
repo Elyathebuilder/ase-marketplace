@@ -48,14 +48,14 @@ export default async function QuotePage({ params }: { params: Params }) {
       <section className="card p-4 md:p-5">
         <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <Item k={s.from} v={`${q.company}, ${place(q.city, lang)}`} />
-          <Item k={s.quantity} v={`${formatNumber(q.qty)} ${units(q.unit, lang, q.qty)}`} />
+          <Item k={s.quantity} v={`${formatNumber(q.qty, lang)} ${units(q.unit, lang, q.qty)}`} />
           <Item k={s.neededBy} v={q.neededBy ? formatDate(q.neededBy, lang, { day: "numeric", month: "long", year: "numeric" }) : s.flexible} />
           <Item k={s.listed} v={p ? quoteTitle(q, lang) : s.customItem} />
         </dl>
         <h2 className="mt-5 text-sm font-bold text-ink">{s.requirements}</h2>
         <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-ink-2">{q.requirements}</p>
         {listWholesale != null && (
-          <p className="mt-3 text-xs text-muted">{s.listedWholesale(formatGel(listWholesale), units(q.unit, lang, 1))}</p>
+          <p className="mt-3 text-xs text-muted">{s.listedWholesale(formatGel(listWholesale, lang), units(q.unit, lang, 1))}</p>
         )}
       </section>
 
@@ -63,8 +63,8 @@ export default async function QuotePage({ params }: { params: Params }) {
         <h2 className="mb-4 text-base font-bold">{q.offer ? s.yours : s.send}</h2>
         {q.offer ? (
           <dl className="grid gap-4 text-sm sm:grid-cols-4">
-            <Item k={s.unitPrice} v={formatGel(q.offer.unitPrice)} />
-            <Item k={s.total} v={formatGel(q.offer.unitPrice * q.qty)} />
+            <Item k={s.unitPrice} v={formatGel(q.offer.unitPrice, lang)} />
+            <Item k={s.total} v={formatGel(q.offer.unitPrice * q.qty, lang)} />
             <Item k={s.production} v={t.product.workingDays(q.offer.leadDays)} />
             <Item k={s.validUntil} v={formatDate(q.offer.validUntil, lang, { day: "numeric", month: "short" })} />
           </dl>

@@ -9,7 +9,7 @@ import { AlertTriangle, Check, FlaskConical, Info, Landmark, MapPin } from "luci
 import { formatDate, getDict, type Lang } from "@/i18n";
 import { formatTetri } from "@/lib/money";
 
-const money = (t: number) => formatTetri(t);
+const money = (t: number, lang: Lang) => formatTetri(t, lang);
 
 export function CheckoutSteps({ lang, step }: { lang: Lang; step: 1 | 2 | 3 | 4 }) {
   const j = getDict(lang).market.journey;
@@ -100,30 +100,30 @@ export function OrderSummary({
               {s.items.map((i) => (
                 <li key={i.key} className="flex justify-between gap-2">
                   <span className="text-ink-2">{i.qty} × {i.name}</span>
-                  <span className="shrink-0 tabular-nums">{money(i.line)}</span>
+                  <span className="shrink-0 tabular-nums">{money(i.line, lang)}</span>
                 </li>
               ))}
               <li className="flex justify-between gap-2 text-muted">
                 <span>{m.order.delivery}</span>
-                <span className="tabular-nums">{money(s.delivery)}</span>
+                <span className="tabular-nums">{money(s.delivery, lang)}</span>
               </li>
             </ul>
           </li>
         ))}
       </ul>
       <dl className="mt-4 space-y-1.5 text-sm">
-        <div className="flex justify-between gap-3 text-ink-2"><dt>{m.order.subtotal}</dt><dd className="tabular-nums">{money(goods)}</dd></div>
-        <div className="flex justify-between gap-3 text-ink-2"><dt>{m.order.delivery}</dt><dd className="tabular-nums">{money(delivery)}</dd></div>
+        <div className="flex justify-between gap-3 text-ink-2"><dt>{m.order.subtotal}</dt><dd className="tabular-nums">{money(goods, lang)}</dd></div>
+        <div className="flex justify-between gap-3 text-ink-2"><dt>{m.order.delivery}</dt><dd className="tabular-nums">{money(delivery, lang)}</dd></div>
         {showCommission && (
           <div className="flex justify-between gap-3 text-ink-2">
             <dt>{m.checkout.commission}<span className="block text-xs text-muted">{m.checkout.commissionNote}</span></dt>
-            <dd className="tabular-nums">{money(0)}</dd>
+            <dd className="tabular-nums">{money(0, lang)}</dd>
           </div>
         )}
-        <div className="flex justify-between gap-3 border-t border-line pt-2 text-base font-bold"><dt>{m.order.total}</dt><dd className="tabular-nums">{money(total)}</dd></div>
-        {received !== undefined && <div className="flex justify-between gap-3 text-ink-2"><dt>{m.order.received}</dt><dd className="tabular-nums">{money(received)}</dd></div>}
-        {!!refunded && <div className="flex justify-between gap-3 text-ink-2"><dt>{m.order.refunded}</dt><dd className="tabular-nums">{money(refunded)}</dd></div>}
-        {!!due && <div className="flex justify-between gap-3 font-semibold text-red-700"><dt>{m.order.due}</dt><dd className="tabular-nums">{money(due)}</dd></div>}
+        <div className="flex justify-between gap-3 border-t border-line pt-2 text-base font-bold"><dt>{m.order.total}</dt><dd className="tabular-nums">{money(total, lang)}</dd></div>
+        {received !== undefined && <div className="flex justify-between gap-3 text-ink-2"><dt>{m.order.received}</dt><dd className="tabular-nums">{money(received, lang)}</dd></div>}
+        {!!refunded && <div className="flex justify-between gap-3 text-ink-2"><dt>{m.order.refunded}</dt><dd className="tabular-nums">{money(refunded, lang)}</dd></div>}
+        {!!due && <div className="flex justify-between gap-3 font-semibold text-red-700"><dt>{m.order.due}</dt><dd className="tabular-nums">{money(due, lang)}</dd></div>}
       </dl>
     </section>
   );
@@ -151,7 +151,7 @@ export function PaymentInstructions({ lang, orderId, due, bank, deadline, isTest
       <dl className="grid gap-x-6 gap-y-3 p-4 text-sm sm:grid-cols-2" data-bank-details>
         <div className="sm:col-span-2">
           <dt className="text-muted">{o.amountToPay}</dt>
-          <dd className="text-2xl font-extrabold tabular-nums text-ink">{money(due)}</dd>
+          <dd className="text-2xl font-extrabold tabular-nums text-ink">{money(due, lang)}</dd>
         </div>
         <div><dt className="text-muted">{o.holder}</dt><dd className="font-semibold">{bank.holder}</dd></div>
         <div><dt className="text-muted">{o.bank}</dt><dd className="font-semibold">{bank.bank}</dd></div>
@@ -271,7 +271,7 @@ export function Confirmation({ lang, orderId, report, email, isTest }: { lang: L
           <div>
             <h2 className="text-sm font-bold">{c.yourReport}</h2>
             <dl className="mt-2 space-y-1 text-sm">
-              <div className="flex justify-between gap-3"><dt className="text-muted">{m.order.amount}</dt><dd className="font-semibold tabular-nums">{money(report.amount)}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-muted">{m.order.amount}</dt><dd className="font-semibold tabular-nums">{money(report.amount, lang)}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-muted">{m.order.date}</dt><dd>{report.date}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-muted">{m.order.bankRef}</dt><dd className="break-all font-mono">{report.reference}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-muted">{m.admin.payments.status}</dt><dd className="font-semibold text-[#24476b]">{m.order.pendingTitle}</dd></div>

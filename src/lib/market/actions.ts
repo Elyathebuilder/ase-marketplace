@@ -6,7 +6,7 @@
  * roles or statuses is trusted.
  */
 import { redirect } from "next/navigation";
-import { href, isLang } from "@/i18n/config";
+import { href, langFrom } from "@/i18n/config";
 import { toTetri } from "../money";
 import { run, safeBack, str, withParam, errorCode } from "./action-kit";
 import { currentActor, endSession, startSession } from "./auth";
@@ -27,7 +27,7 @@ export async function signInAs(f: FormData) {
     : undefined;
   if (!user) redirect(safeBack(f));
   await startSession(user.id);
-  const lang = isLang(str(f, "lang")) ? (str(f, "lang") as "ka" | "en") : "ka";
+  const lang = langFrom(str(f, "lang"));
   const home = user.role === "customer" ? "/account/orders" : user.role === "manufacturer" ? "/seller/orders" : "/admin";
   const next = str(f, "next");
   redirect(next.startsWith("/") && !next.startsWith("//") ? next : href(lang, home));
@@ -41,7 +41,7 @@ export async function signOut(f: FormData) {
 /* ---------------- Customer ---------------- */
 
 export async function placeOrderAction(f: FormData) {
-  const lang = isLang(str(f, "lang")) ? (str(f, "lang") as "ka" | "en") : "ka";
+  const lang = langFrom(str(f, "lang"));
   let id: string | null = null;
   let error = "";
   try {

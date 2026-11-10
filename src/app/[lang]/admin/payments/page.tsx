@@ -53,10 +53,10 @@ export default async function AdminPayments({ params, searchParams }: { params: 
                 <td className="px-3 py-2 font-semibold">{r.id}</td>
                 <td className="px-3 py-2"><Link href={href(lang, `/admin/orders/${r.order_id}`)} className="text-red-600 hover:underline">{r.order_id}</Link> {r.is_test === 1 && <TestTag lang={lang} />}</td>
                 <td className="px-3 py-2">{r.customer_name}</td>
-                <td className="px-3 py-2 tabular-nums">{tetri(r.expected_tetri)}</td>
+                <td className="px-3 py-2 tabular-nums">{tetri(r.expected_tetri, lang)}</td>
                 <td className={`px-3 py-2 tabular-nums ${r.reported_tetri != null && r.reported_tetri !== r.expected_tetri ? "font-semibold text-warn" : ""}`}>
-                  {tetri(r.reported_tetri)}
-                  {r.received_tetri != null && <span className="block text-xs text-muted">{m.order.receivedAmount}: {tetri(r.received_tetri)}</span>}
+                  {tetri(r.reported_tetri, lang)}
+                  {r.received_tetri != null && <span className="block text-xs text-muted">{m.order.receivedAmount}: {tetri(r.received_tetri, lang)}</span>}
                 </td>
                 <td className="px-3 py-2">{p.bankTransfer}</td>
                 <td className="px-3 py-2 font-mono text-xs">{r.reference ?? "—"}{r.reported_date ? <span className="block text-muted">{r.reported_date}</span> : null}</td>

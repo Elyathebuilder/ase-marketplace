@@ -55,12 +55,12 @@ export default async function ProductPage({ params }: { params: Params }) {
   const related = relatedProducts(product);
 
   const details: [string, string][] = [
-    [pt.packageSize, `${product.lengthCm} × ${product.widthCm} × ${product.heightCm} cm`],
-    [pt.weight, `${product.weightKg} kg`],
+    [pt.packageSize, `${product.lengthCm} × ${product.widthCm} × ${product.heightCm} ${t.common.measure.cm}`],
+    [pt.weight, `${formatNumber(product.weightKg, lang)} ${t.common.measure.kg}`],
     [pt.materials, product.materials.join(", ") || "—"],
     ...Object.entries(product.specs),
-    [pt.stock, product.stock > 0 ? `${formatNumber(product.stock)} ${u(product.stock)}` : t.availability.made_to_order],
-    [pt.moq, `${formatNumber(product.moq)} ${u(product.moq)}`],
+    [pt.stock, product.stock > 0 ? `${formatNumber(product.stock, lang)} ${u(product.stock)}` : t.availability.made_to_order],
+    [pt.moq, `${formatNumber(product.moq, lang)} ${u(product.moq)}`],
     [pt.productionTime, pt.workingDays(product.productionDays)],
     [pt.customization, product.customizable ? product.customizationOptions.join(", ") || pt.available2 : pt.notAvailable2],
   ];
@@ -99,7 +99,7 @@ export default async function ProductPage({ params }: { params: Params }) {
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
             <span className={availability === "made_to_order" ? "font-semibold text-warn" : availability === "low_stock" ? "font-semibold text-red-700" : "font-semibold text-ok"}>
               {t.availability[availability]}
-              {availability !== "made_to_order" && ` · ${pt.available(formatNumber(product.stock))}`}
+              {availability !== "made_to_order" && ` · ${pt.available(formatNumber(product.stock, lang))}`}
             </span>
             <span className="inline-flex items-center gap-1 text-muted"><MapPin className="h-3.5 w-3.5" aria-hidden="true" />{pt.shipsFrom(m.city)}</span>
           </div>
@@ -110,7 +110,7 @@ export default async function ProductPage({ params }: { params: Params }) {
               <p className="text-xs font-bold uppercase tracking-wider text-muted">{pt.retailPrice}</p>
               {product.retailPrice != null ? (
                 <p className="mt-1 text-3xl font-extrabold text-ink">
-                  {formatGel(product.retailPrice)}
+                  {formatGel(product.retailPrice, lang)}
                   <span className="text-sm font-medium text-muted"> / {product.unit}</span>
                 </p>
               ) : (
@@ -123,10 +123,10 @@ export default async function ProductPage({ params }: { params: Params }) {
               {wholesaleFrom != null ? (
                 <>
                   <p className="mt-1 text-2xl font-extrabold text-ink">
-                    {pt.fromPrice(formatGel(wholesaleFrom))}
+                    {pt.fromPrice(formatGel(wholesaleFrom, lang))}
                     <span className="text-sm font-medium text-muted"> / {product.unit}</span>
                   </p>
-                  <p className="mt-1 text-xs text-muted">{pt.wholesaleMin(formatNumber(product.wholesale!.minQty), u(product.wholesale!.minQty))}</p>
+                  <p className="mt-1 text-xs text-muted">{pt.wholesaleMin(formatNumber(product.wholesale!.minQty, lang), u(product.wholesale!.minQty))}</p>
                 </>
               ) : product.requestQuote ? (
                 <p className="mt-1 text-lg font-bold text-ink">{pt.onRequest}</p>
@@ -217,10 +217,10 @@ export default async function ProductPage({ params }: { params: Params }) {
                     {product.wholesale.tiers.map((tier, i, arr) => (
                       <tr key={tier.minQty}>
                         <td className="px-4 py-2.5 text-ink">
-                          {formatNumber(tier.minQty)}
-                          {arr[i + 1] ? `–${formatNumber(arr[i + 1].minQty - 1)}` : "+"} {u(2)}
+                          {formatNumber(tier.minQty, lang)}
+                          {arr[i + 1] ? `–${formatNumber(arr[i + 1].minQty - 1, lang)}` : "+"} {u(2)}
                         </td>
-                        <td className="px-4 py-2.5 font-semibold text-ink">{formatGel(tier.unitPrice)}</td>
+                        <td className="px-4 py-2.5 font-semibold text-ink">{formatGel(tier.unitPrice, lang)}</td>
                         <td className="px-4 py-2.5 text-ok">
                           {product.retailPrice ? `−${Math.round((1 - tier.unitPrice / product.retailPrice) * 100)}%` : "—"}
                         </td>
@@ -235,7 +235,7 @@ export default async function ProductPage({ params }: { params: Params }) {
           <section>
             <h2 className="text-xl font-bold">{pt.shipping}</h2>
             <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-              <Fact icon={<Package className="h-4 w-4" />} title={pt.packed} text={pt.packedText(`${product.lengthCm} × ${product.widthCm} × ${product.heightCm} cm`, product.weightKg, product.unit)} />
+              <Fact icon={<Package className="h-4 w-4" />} title={pt.packed} text={pt.packedText(`${product.lengthCm} × ${product.widthCm} × ${product.heightCm} ${t.common.measure.cm}`, product.weightKg, product.unit)} />
               <Fact icon={<MapPin className="h-4 w-4" />} title={pt.pickup} text={pt.pickupText(m.city, m.region)} />
               <Fact icon={<Clock className="h-4 w-4" />} title={pt.dispatch} text={product.stock > 0 ? pt.dispatchStock : pt.dispatchMade(product.productionDays)} />
               {(product.fragile || product.specialHandling) && (

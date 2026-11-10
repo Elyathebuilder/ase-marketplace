@@ -3,13 +3,13 @@ export const accEn = {
   mail: {
     verify: (name: string) => ({
       subject: "Confirm your email address",
-      text: `Hello ${name},\n\nPlease confirm your email address for your ASE account by opening the link below. The link works for 48 hours.\n\nIf you didn't create an account, you can ignore this email.`,
+      text: `Hello ${name},\n\nPlease confirm your email address for your Bazari account by opening the link below. The link works for 48 hours.\n\nIf you didn't create an account, you can ignore this email.`,
     }),
     reset: (name: string) => ({
       subject: "Reset your password",
-      text: `Hello ${name},\n\nSomeone asked to reset the password of your ASE account. To choose a new password, open the link below within one hour.\n\nIf it wasn't you, ignore this email: your password stays the same.`,
+      text: `Hello ${name},\n\nSomeone asked to reset the password of your Bazari account. To choose a new password, open the link below within one hour.\n\nIf it wasn't you, ignore this email: your password stays the same.`,
     }),
-    notification: (text: string) => ({ subject: "ASE: an update for you", text: `${text}\n\nSee the details in your ASE account.` }),
+    notification: (text: string) => ({ subject: "Bazari: an update for you", text: `${text}\n\nSee the details in your Bazari account.` }),
   },
   errors: {
     email_taken: "An account with this email already exists. Sign in or reset your password.",
@@ -17,7 +17,7 @@ export const accEn = {
     password_mismatch: "The two passwords don't match.",
     bad_credentials: "The email or password is wrong.",
     too_many_attempts: "Too many failed attempts. Please wait 15 minutes and try again, or reset your password.",
-    account_suspended: "This account is suspended. Please contact Amartani.",
+    account_suspended: "This account is suspended. Please contact Bazari.",
     token_invalid: "This link has expired or was already used. Ask for a new one.",
     email_unverified: "Please confirm your email address first. We sent you a link.",
     seller_not_approved: "Your seller account isn't approved yet, so this isn't possible yet.",
@@ -36,7 +36,7 @@ export const accEn = {
   },
   register: {
     title: "Create an account",
-    intro: "Choose what you want to do on ASE.",
+    intro: "Choose what you want to do on Bazari.",
     customerTitle: "I want to buy",
     customerText: "Order products from Georgian manufacturers and follow your orders.",
     customerCta: "Register as a customer",
@@ -97,7 +97,7 @@ export const accEn = {
     saved: "Saved.",
     save: "Save",
     phone: "Phone (optional)",
-    emailFixed: "To change your email address, please contact Amartani.",
+    emailFixed: "To change your email address, please contact Bazari.",
     verified: "Email confirmed",
     unverified: "Email not confirmed yet",
     currentPassword: "Current password",

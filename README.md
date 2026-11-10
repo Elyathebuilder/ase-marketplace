@@ -1,4 +1,4 @@
-# ASE — Georgian Manufacturers Marketplace
+# Bazari — Georgian Manufacturers Marketplace
 
 "You manufacture. We sell." A B2C + B2B marketplace for products physically made in Georgia.
 
@@ -70,7 +70,7 @@ Delete the `data/` folder to start again with fresh demo orders.
 | `ASE_SESSION_SECRET` | Signs sign-in cookies. Required on the live site: a long random string, kept secret. |
 | `ASE_BASE_URL` | The site address used in email links, e.g. `https://ase.ge`. |
 | `ASE_ADMIN_EMAIL`, `ASE_ADMIN_PASSWORD`, `ASE_ADMIN_NAME` | Create the first administrator on start if no account has that email. Never changes an existing account; remove the password after the first start. |
-| `RESEND_API_KEY`, `MAIL_FROM` | Send emails through Resend (e.g. `MAIL_FROM="Amartani <no-reply@ase.ge>"`). Without them emails are kept in the outbox, marked "not sent", and shown at `/admin/emails`. |
+| `RESEND_API_KEY`, `MAIL_FROM` | Send emails through Resend (e.g. `MAIL_FROM="Bazari <no-reply@example.ge>"`). Without them emails are kept in the outbox, marked "not sent", and shown at `/admin/emails`. |
 | `ASE_DB_PATH`, `ASE_UPLOAD_DIR` | Where the database and uploaded files live (default `data/`). Back both up. |
 | `ASE_SEED_DEMO=0` | No demo accounts, sellers, products or orders (use this on the live site). |
 | `ASE_TEST_MODE=0` | Switch TEST mode off (it is on by default). |
@@ -86,7 +86,7 @@ Only approved sellers' published products are public. The "Verified Manufacturer
 the seller asks for it, an administrator schedules and records an inspection, and only then can award it.
 
 **TEST mode.** New orders are marked TEST, show placeholder bank details ("do not transfer money") instead of
-Amartani's real account, and are counted apart from real orders in the admin overview. A test payment
+the platform's real account, and are counted apart from real orders in the admin overview. A test payment
 notification is never treated as a received payment: an administrator still has to verify it.
 
 **Static preview** (`tools/preview`): `python3 tools/preview/crawl.py OUT` copies the running app (port 3100)
@@ -115,4 +115,4 @@ Georgian; the others are the same page under `/en`, `/ru`, `/tr` and `/hy`. The 
 
 Customers only see "Estimated delivery: X ₾" (per manufacturer in the cart, plus the combined total).
 How the price is built (vehicle, utilization, base fee, per-km rate, space fee) is internal and shown on
-`/admin/delivery` for ASE staff. That page gets access control when accounts and roles are added.
+`/admin/delivery` for Bazari staff. That page gets access control when accounts and roles are added.

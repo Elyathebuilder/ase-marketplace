@@ -440,7 +440,7 @@ export function bootstrapAdmin(ctx: Ctx, env: Record<string, string | undefined>
   const email = normalizeEmail(env.ASE_ADMIN_EMAIL);
   if (ctx.db.prepare("SELECT 1 FROM users WHERE email = ?").get(email)) return null;
   validatePassword(password, password);
-  const name = cleanName(env.ASE_ADMIN_NAME || "ASE admin");
+  const name = cleanName(env.ASE_ADMIN_NAME || "Bazari admin");
   const id = `adm-${randomUUID()}`;
   const at = ctx.now().toISOString();
   ctx.db

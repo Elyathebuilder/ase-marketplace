@@ -31,6 +31,8 @@ def fetch(u):
     # The seller portal is shown read-only, as the demo seller sees it.
     elif re.match(r'^(/(?:en|ru|tr|hy))?/seller', path): req.add_header('Cookie',cookie('maker-imereti-timber-works'))
     return urllib.request.urlopen(req).read().decode()
+STATIC=re.compile(r'\.(svg|png|ico|jpg|webp)$')
+static=set()
 seen={}; queue=list(start); css_cache={}; assets=set()
 while queue:
     u=queue.pop(0)
@@ -43,6 +45,7 @@ while queue:
         href=html.unescape(href)
         if href.startswith('/_next'): continue
         p=urllib.parse.urlsplit(href)
+        if STATIC.search(p.path): continue  # icons and other files are copied, not crawled
         if not p.query:
             if href not in seen: queue.append(href)
         # filtered views: only the ones linked from the two home pages
@@ -63,6 +66,9 @@ def rewrite(u, body):
     def lnk(m):
         h=html.unescape(m.group(1)); frag=m.group(2) or ''
         if h.startswith('/_next'): return m.group(0)
+        sp=urllib.parse.urlsplit(h).path
+        if STATIC.search(sp):
+            static.add(sp); return 'href="'+sp.lstrip('/')+'"'
         tgt = h if h in seen else (urllib.parse.urlsplit(h).path or '/')
         return 'href="'+name_for(tgt)+frag+'"'
     body=re.sub(r'href="(/[^"#]*)(#[^"]*)?"',lnk,body)
@@ -88,6 +94,9 @@ for u,b in seen.items():
 os.makedirs(os.path.join(OUT,'fonts'),exist_ok=True)
 for a in assets:
     open(os.path.join(OUT,'fonts',a),'wb').write(urllib.request.urlopen(BASE+'/_next/static/media/'+a).read())
+for sp in static:
+    dst=os.path.join(OUT,sp.lstrip('/')); os.makedirs(os.path.dirname(dst),exist_ok=True)
+    open(dst,'wb').write(urllib.request.urlopen(BASE+sp).read())
 # Journey pages for the preview, built from the cart page with its content swapped for an island.
 def journey(src_url, path, island, title):
     h=pages[src_url]
@@ -101,13 +110,13 @@ TITLES={
   'ru':('Оформление заказа','Тестовый заказ'), 'tr':('Siparişi tamamla','Test siparişi'), 'hy':('Պատվերի ձևակերպում','Թեստային պատվեր'),
 }
 for l in LANGS:
-    journey(PREFIX[l]+'/cart','/checkout','local-checkout',TITLES[l][0]+' · ASE')
-    journey(PREFIX[l]+'/cart','/test-order','local-order',TITLES[l][1]+' · ASE')
+    journey(PREFIX[l]+'/cart','/checkout','local-checkout',TITLES[l][0]+' · Bazari')
+    journey(PREFIX[l]+'/cart','/test-order','local-order',TITLES[l][1]+' · Bazari')
 # Main artifact page: the Georgian home page without its html/head wrapper.
 h=pages['/']
 styles=''.join(re.findall(r'<style>.*?</style>',h,flags=re.S))
 html_cls=re.search(r'<html[^>]*class="([^"]*)"',h).group(1)
 body_m=re.search(r'<body[^>]*class="([^"]*)"[^>]*>(.*)</body>',h,flags=re.S)
-main='<title>ASE Marketplace</title>\n'+styles+'\n<div lang="ka" class="'+html_cls+' '+body_m.group(1)+'">'+body_m.group(2)+'</div>'
+main='<title>Bazari</title>\n'+styles+'\n<div lang="ka" class="'+html_cls+' '+body_m.group(1)+'">'+body_m.group(2)+'</div>'
 open(os.path.join(OUT,'ase-marketplace.html'),'w').write(main)
 print('files',len(os.listdir(OUT)),'fonts',len(assets))

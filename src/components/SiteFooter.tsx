@@ -36,12 +36,12 @@ export function SiteFooter({ lang }: { lang: Lang }) {
           <FooterLink href={to("/about#delivery")}>{f.delivery}</FooterLink>
           <FooterLink href={to("/about#policies")}>{f.policies}</FooterLink>
           <li className="pt-2 text-sm">{f.city}</li>
-          <li className="text-sm">hello@ase.demo</li>
+          <li className="text-sm">hello@bazari.demo</li>
         </FooterCol>
       </div>
       <div className="border-t border-white/10">
         <div className="container-page flex flex-col gap-2 py-5 text-xs sm:flex-row sm:justify-between">
-          <p>© {new Date().getFullYear()} ASE. {f.rights}</p>
+          <p>© {new Date().getFullYear()} Bazari. {f.rights}</p>
           <p>{f.currency}</p>
         </div>
       </div>

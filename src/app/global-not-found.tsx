@@ -8,7 +8,7 @@ import { I18nProvider } from "@/i18n/client";
 import { fontVariables } from "./fonts";
 import "./globals.css";
 
-export const metadata: Metadata = { title: "404 · ASE", robots: { index: false } };
+export const metadata: Metadata = { title: "404 · Bazari", robots: { index: false } };
 
 /** The site's own "page not found", in the visitor's language, with the normal header and footer. */
 export default async function GlobalNotFound() {

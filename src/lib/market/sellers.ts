@@ -131,7 +131,7 @@ export function emailNotification(ctx: Ctx, userId: string, kind: string, orderI
   // Written in the person's chosen language (Georgian and English together if they never chose one).
   const mail = mailFor(ctx, userId, (l) => {
     const text = notificationText(l, kind, orderId, params);
-    return { subject: `ASE: ${text}`.slice(0, 160), text };
+    return { subject: `Bazari: ${text}`.slice(0, 160), text };
   });
   const lang = userLang(ctx, userId) ?? "ka";
   const link = typeof params.link === "string" ? href(lang, params.link) : null;
